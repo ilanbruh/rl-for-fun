@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="אתר לימוד אינטראקטיבי של Reinforcement Learning (למידה מחוזקת) בעברית — הסבר, אנימציות וסימולציות לשחק איתן." />
+<title>RL בכיף · ללמוד Reinforcement Learning בעברית</title>
+
+<!-- גופנים: Fredoka (כותרות, עגול ושובב) + Rubik (טקסט) — שניהם תומכים בעברית, עם נפילה לגופני מערכת אם אין אינטרנט -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Rubik:wght@400;500;600;700;800&family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+/* =================================================================
+   מערכת העיצוב — Claymorphism (סגנון "פלסטלינה" עגול ושובב)
+   פלטה צבעונית ואנרגטית, רקע בהיר, ניגודיות גבוהה לקריאוּת
+   ================================================================= */
+:root{
+  /* פלטה ראשית */
+  --indigo:#6366F1;  --indigo-d:#4F46E5;  --indigo-dd:#3730A3;
+  --violet:#818CF8;  --purple:#A855F7;
+  --green:#22C55E;   --green-d:#16A34A;
+  --red:#EF4444;     --red-d:#DC2626;
+  --amber:#F59E0B;   --amber-l:#FCD34D;
+  --pink:#EC4899;    --cyan:#06B6D4;     --teal:#14B8A6;
+
+  /* רקעים וטקסט */
+  --bg:#EEF2FF;      --bg-2:#FAF5FF;
+  --ink:#312E81;     /* כותרות — אינדיגו עמוק */
+  --ink-2:#1F2440;   /* גוף הטקסט */
+  --muted:#475569;   /* טקסט משני — עדיין מעל 4.5:1 */
+  --card:#FFFFFF;    --card-soft:#F4F6FF;
+
+  /* פלסטלינה */
+  --r:24px; --r-sm:16px; --r-lg:32px; --r-pill:999px;
+  --bd:3px;
+  --sh-clay: 9px 9px 22px rgba(79,70,229,.16), -7px -7px 18px rgba(255,255,255,.92);
+  --sh-clay-sm: 5px 5px 12px rgba(79,70,229,.14), -4px -4px 10px rgba(255,255,255,.9);
+  --sh-pop: 0 16px 34px rgba(79,70,229,.28);
+  --sh-press: inset 4px 4px 10px rgba(79,70,229,.18), inset -4px -4px 10px rgba(255,255,255,.7);
+  --ease: cubic-bezier(.34,1.56,.64,1); /* "באונס" רך */
+  --ease-out: cubic-bezier(.22,.61,.36,1);
+
+  --maxw:1180px;
+  --nav-h:74px;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; padding:0;
+  font-family:"Rubik","Heebo",-apple-system,"Segoe UI",Arial,sans-serif;
+  color:var(--ink-2);
+  background:var(--bg);
+  line-height:1.7;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+h1,h2,h3,h4,.display{font-family:"Fredoka","Varela Round","Rubik",sans-serif;font-weight:600;color:var(--ink);line-height:1.2;margin:0 0 .4em}
+p{margin:0 0 1em}
+a{color:var(--indigo-d);text-decoration:none}
+button{font-family:inherit}
+:focus-visible{outline:3px solid var(--amber);outline-offset:3px;border-radius:8px}
+.ltr{direction:ltr;unicode-bidi:isolate}
+.en{direction:ltr;unicode-bidi:isolate;font-family:"Rubik",sans-serif;font-weight:600}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+
+/* ---------- רקע אנימטיבי ---------- */
+#bgCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none}
+.bg-base{position:fixed;inset:0;z-index:-3;pointer-events:none;
+  background:
+    radial-gradient(1100px 700px at 85% -5%, #E0E7FF 0%, rgba(224,231,255,0) 60%),
+    radial-gradient(900px 600px at 0% 100%, #FAE8FF 0%, rgba(250,232,255,0) 55%),
+    linear-gradient(180deg,#EEF2FF 0%, #F5F3FF 55%, #FFF1F9 100%);
+}
+
+/* ---------- ניווט ---------- */
+.nav-wrap{position:sticky;top:0;z-index:50;padding:14px clamp(12px,3vw,26px)}
+.nav{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;gap:14px;
+  background:rgba(255,255,255,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:var(--bd) solid #fff;border-radius:var(--r-pill);
+  box-shadow:var(--sh-clay-sm);padding:9px 14px}
+.brand{display:flex;align-items:center;gap:10px;font-family:"Fredoka",sans-serif;font-weight:700;
+  font-size:1.22rem;color:var(--ink);cursor:pointer;background:none;border:0;padding:4px 6px}
+.brand .logo{width:38px;height:38px;flex:0 0 auto;border-radius:12px;
+  background:conic-gradient(from 200deg,var(--indigo),var(--purple),var(--pink),var(--amber),var(--green),var(--indigo));
+  display:grid;place-items:center;box-shadow:var(--sh-clay-sm);animation:spin 14s linear infinite}
+.brand .logo svg{width:22px;height:22px;color:#fff}
+.nav-links{display:flex;gap:6px;margin-inline-start:auto;align-items:center}
+.nav-btn{position:relative;border:0;background:transparent;color:var(--ink);font-weight:600;font-size:1rem;
+  padding:9px 16px;border-radius:var(--r-pill);cursor:pointer;transition:background .2s var(--ease-out),color .2s,transform .15s var(--ease)}
+.nav-btn:hover{background:#EEF2FF}
+.nav-btn.active{background:linear-gradient(145deg,var(--indigo),var(--indigo-d));color:#fff;box-shadow:var(--sh-clay-sm)}
+.nav-score{display:flex;align-items:center;gap:7px;background:linear-gradient(145deg,#FFF7E6,#FFEFC2);
+  border:var(--bd) solid #fff;border-radius:var(--r-pill);padding:6px 13px;font-weight:700;color:#92660A;
+  box-shadow:var(--sh-clay-sm);font-size:.95rem;white-space:nowrap}
+.nav-score svg{width:18px;height:18px;color:var(--amber)}
+.nav-toggle{display:none}
+
+/* ---------- מבנה כללי ---------- */
+main{max-width:var(--maxw);margin:0 auto;padding:8px clamp(14px,3.5vw,28px) 80px}
+.section{margin:64px 0}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;background:#fff;border:var(--bd) solid #fff;
+  box-shadow:var(--sh-clay-sm);color:var(--indigo-d);font-weight:700;padding:7px 16px;border-radius:var(--r-pill);
+  font-size:.92rem;margin-bottom:18px}
+.eyebrow svg{width:17px;height:17px}
+.section-title{font-size:clamp(1.7rem,4vw,2.5rem);margin-bottom:.2em}
+.section-sub{color:var(--muted);font-size:1.1rem;max-width:60ch;margin-bottom:8px}
+
+/* ---------- כרטיס פלסטלינה ---------- */
+.clay{background:linear-gradient(145deg,#ffffff,#eef1ff);border:var(--bd) solid #fff;
+  border-radius:var(--r);box-shadow:var(--sh-clay)}
+.clay-soft{background:#fff;border:var(--bd) solid #fff;border-radius:var(--r-sm);box-shadow:var(--sh-clay-sm)}
+
+/* ---------- כפתורים ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;
+  font-family:"Fredoka",sans-serif;font-weight:600;font-size:1.05rem;color:#fff;
+  border:var(--bd) solid rgba(255,255,255,.65);border-radius:var(--r-pill);padding:13px 26px;
+  background:linear-gradient(145deg,var(--indigo),var(--indigo-d));
+  box-shadow:8px 8px 18px rgba(79,70,229,.32), -4px -4px 12px rgba(255,255,255,.5);
+  transition:transform .15s var(--ease), box-shadow .2s, filter .2s}
+.btn svg{width:20px;height:20px}
+.btn:hover{transform:translateY(-3px);filter:saturate(1.08) brightness(1.04)}
+.btn:active{transform:translateY(1px) scale(.98);box-shadow:var(--sh-press)}
+.btn.green{background:linear-gradient(145deg,#34D399,var(--green-d));box-shadow:8px 8px 18px rgba(22,163,74,.32), -4px -4px 12px rgba(255,255,255,.5)}
+.btn.amber{background:linear-gradient(145deg,var(--amber-l),var(--amber));color:#7A4E00;box-shadow:8px 8px 18px rgba(245,158,11,.3), -4px -4px 12px rgba(255,255,255,.6)}
+.btn.pink{background:linear-gradient(145deg,#F472B6,var(--pink))}
+.btn.ghost{background:#fff;color:var(--indigo-d);box-shadow:var(--sh-clay-sm)}
+.btn.sm{padding:9px 16px;font-size:.95rem;border-width:2px}
+.btn.tiny{padding:7px 12px;font-size:.85rem;border-width:2px;gap:6px}
+.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none;filter:grayscale(.3)}
+.btn-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+
+/* ---------- HERO ---------- */
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:36px;align-items:center;margin-top:18px;min-height:72vh}
+.hero-title{font-size:clamp(2.3rem,6vw,4.2rem);font-weight:700;letter-spacing:-.5px;margin-bottom:.15em}
+.hero-title .grad{background:linear-gradient(110deg,var(--indigo),var(--purple) 40%,var(--pink) 70%,var(--amber));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-tag{font-size:clamp(1.05rem,2.2vw,1.35rem);color:var(--ink-2);max-width:34ch;margin-bottom:26px;font-weight:500}
+.hero-en{font-size:.5em;color:var(--muted);font-weight:600;margin-top:8px}
+.hero-stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.chip{display:inline-flex;align-items:center;gap:8px;background:#fff;border:var(--bd) solid #fff;
+  box-shadow:var(--sh-clay-sm);border-radius:var(--r-pill);padding:9px 16px;font-weight:600;color:var(--ink)}
+.chip svg{width:18px;height:18px}
+.chip .dot{width:10px;height:10px;border-radius:50%}
+
+/* במת ההירו — לולאת ה-RL */
+.hero-stage{position:relative;aspect-ratio:1/1;width:100%;max-width:480px;margin-inline:auto;
+  display:grid;place-items:center}
+.loop-svg{width:100%;height:100%;overflow:visible}
+
+/* ---------- כרטיסי מושג ---------- */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:20px}
+.concept{padding:24px;position:relative;overflow:hidden;cursor:default;
+  transition:transform .25s var(--ease), box-shadow .25s}
+.concept:hover{transform:translateY(-6px)}
+.concept .ic{width:60px;height:60px;border-radius:18px;display:grid;place-items:center;margin-bottom:14px;
+  box-shadow:var(--sh-clay-sm);border:3px solid #fff}
+.concept .ic svg{width:30px;height:30px;color:#fff}
+.concept h3{font-size:1.3rem;margin-bottom:.25em}
+.concept p{color:var(--muted);font-size:1rem;margin:0}
+.concept .en-tag{font-size:.85rem;color:var(--indigo);font-weight:700;display:block;margin-top:-2px;margin-bottom:8px;direction:ltr;text-align:right}
+
+/* ---------- רצועת "למה זה חשוב" ---------- */
+.why-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.why-card{padding:22px;display:flex;flex-direction:column;gap:8px;transition:transform .25s var(--ease)}
+.why-card:hover{transform:translateY(-5px) rotate(-1deg)}
+.why-card .ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;box-shadow:var(--sh-clay-sm)}
+.why-card .ic svg{width:26px;height:26px;color:#fff}
+.why-card h4{font-size:1.15rem;margin:0}
+.why-card p{font-size:.96rem;color:var(--muted);margin:0}
+
+/* ---------- CTA סופי ---------- */
+.cta-band{padding:46px;text-align:center;background:linear-gradient(135deg,#EEF2FF,#FAE8FF 60%,#FFE4F1);
+  border:var(--bd) solid #fff;border-radius:var(--r-lg);box-shadow:var(--sh-clay)}
+.cta-band h2{font-size:clamp(1.6rem,4vw,2.4rem)}
+
+/* ---------- מעבר בין דפים ---------- */
+.page{animation:pageIn .5s var(--ease-out) both}
+@keyframes pageIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+
+/* =================================================================
+   עמוד 2 — לימוד לעומק (סגנונות)
+   ================================================================= */
+.learn-grid{display:grid;grid-template-columns:240px 1fr;gap:28px;align-items:start}
+.learn-grid>*{min-width:0}
+.toc{position:sticky;top:calc(var(--nav-h) + 18px);padding:18px;max-height:calc(100vh - var(--nav-h) - 40px);overflow:auto}
+.toc h4{font-size:1rem;color:var(--muted);margin-bottom:10px}
+.toc a{display:block;padding:8px 12px;border-radius:12px;color:var(--ink-2);font-weight:500;font-size:.95rem;
+  transition:background .2s,color .2s;cursor:pointer;border:0;background:none;width:100%;text-align:right}
+.toc a:hover{background:#EEF2FF}
+.toc a.active{background:linear-gradient(145deg,var(--indigo),var(--indigo-d));color:#fff}
+.lesson{padding:30px;margin-bottom:24px;scroll-margin-top:calc(var(--nav-h) + 20px)}
+.lesson .num{display:inline-grid;place-items:center;width:42px;height:42px;border-radius:14px;color:#fff;
+  font-family:"Fredoka";font-weight:700;font-size:1.2rem;box-shadow:var(--sh-clay-sm);margin-bottom:10px}
+.lesson h3{font-size:1.55rem}
+.lesson h3 .en{font-size:.95rem;color:var(--indigo);font-weight:700}
+.lesson ul{padding-inline-start:0;list-style:none;margin:14px 0}
+.lesson li{position:relative;padding-inline-start:30px;margin-bottom:10px}
+.lesson li::before{content:"";position:absolute;inset-inline-start:4px;top:11px;width:11px;height:11px;border-radius:50%;
+  background:linear-gradient(145deg,var(--indigo),var(--purple))}
+.callout{display:flex;gap:14px;align-items:flex-start;padding:16px 18px;border-radius:var(--r-sm);margin:18px 0;
+  border:3px solid #fff}
+.callout .ic{flex:0 0 auto;width:38px;height:38px;border-radius:12px;display:grid;place-items:center}
+.callout .ic svg{width:22px;height:22px;color:#fff}
+.callout.tip{background:linear-gradient(145deg,#ECFDF5,#D1FAE5)}
+.callout.tip .ic{background:linear-gradient(145deg,#34D399,var(--green-d))}
+.callout.warn{background:linear-gradient(145deg,#FFFBEB,#FEF3C7)}
+.callout.warn .ic{background:linear-gradient(145deg,var(--amber-l),var(--amber))}
+.callout.when{background:linear-gradient(145deg,#EFF6FF,#DBEAFE)}
+.callout.when .ic{background:linear-gradient(145deg,#60A5FA,var(--indigo-d))}
+.callout b{color:var(--ink)}
+.callout p{margin:0}
+
+/* נוסחה LTR */
+.formula{direction:ltr;text-align:center;background:#0F172A;color:#E2E8F0;border-radius:var(--r-sm);
+  padding:18px 16px;font-family:"Cascadia Code","Consolas","Courier New",monospace;font-size:clamp(.95rem,2.4vw,1.25rem);
+  overflow-x:auto;box-shadow:var(--sh-clay-sm);border:3px solid #fff;margin:16px 0}
+.formula .hl{color:#FCD34D;font-weight:700}
+.formula .hl2{color:#34D399;font-weight:700}
+.formula .hl3{color:#F472B6;font-weight:700}
+.term-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:6px}
+.term-legend div{background:#fff;border-radius:12px;padding:10px 13px;box-shadow:var(--sh-clay-sm);font-size:.93rem}
+.term-legend .k{font-family:"Cascadia Code",monospace;font-weight:700;color:var(--indigo-d);direction:ltr;display:inline-block}
+
+/* מונח עם tooltip */
+.term{border-bottom:2px dotted var(--indigo);cursor:help;font-weight:600;color:var(--indigo-d)}
+.tooltip{position:fixed;z-index:100;max-width:280px;background:#1F2440;color:#fff;padding:12px 15px;border-radius:14px;
+  font-size:.9rem;line-height:1.55;box-shadow:var(--sh-pop);pointer-events:none;opacity:0;transform:translateY(6px);
+  transition:opacity .18s,transform .18s;border:2px solid rgba(255,255,255,.15)}
+.tooltip.show{opacity:1;transform:none}
+.tooltip b{color:var(--amber-l)}
+
+/* "איך ללמוד את זה בקלות" */
+.howto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.analogy{padding:20px;display:flex;gap:14px;align-items:flex-start}
+.analogy .em{flex:0 0 auto;width:50px;height:50px;border-radius:15px;display:grid;place-items:center;box-shadow:var(--sh-clay-sm)}
+.analogy .em svg{width:28px;height:28px;color:#fff}
+.analogy h4{margin:0 0 4px;font-size:1.1rem}
+.analogy p{margin:0;color:var(--muted);font-size:.96rem}
+.order-steps{display:flex;flex-direction:column;gap:0;counter-reset:step}
+.order-step{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:2px dashed #E0E7FF}
+.order-step:last-child{border-bottom:0}
+.order-step .n{counter-increment:step;flex:0 0 auto;width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(145deg,var(--indigo),var(--indigo-d));color:#fff;display:grid;place-items:center;
+  font-family:"Fredoka";font-weight:700;box-shadow:var(--sh-clay-sm)}
+.order-step .n::before{content:counter(step)}
+
+/* כרטיסי "בלבול נפוץ" */
+.confuse{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch}
+.confuse .vs{display:grid;place-items:center;font-family:"Fredoka";font-weight:700;color:var(--pink)}
+.confuse .side{padding:16px;border-radius:var(--r-sm);border:3px solid #fff}
+.confuse .side.a{background:linear-gradient(145deg,#EEF2FF,#E0E7FF)}
+.confuse .side.b{background:linear-gradient(145deg,#FCE7F3,#FBCFE8)}
+.confuse h5{margin:0 0 6px;font-size:1.05rem;color:var(--ink)}
+.confuse p{margin:0;font-size:.92rem;color:var(--ink-2)}
+
+/* כרטיסיות בדיקה עצמית (flip) */
+.quiz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.flip{background:transparent;perspective:1000px;height:160px;cursor:pointer;border:0;padding:0;font-family:inherit;text-align:start}
+.flip-inner{position:relative;width:100%;height:100%;transition:transform .6s var(--ease);transform-style:preserve-3d}
+.flip.flipped .flip-inner{transform:rotateY(180deg)}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:var(--r-sm);
+  padding:18px;display:flex;flex-direction:column;justify-content:center;border:3px solid #fff;box-shadow:var(--sh-clay-sm)}
+.flip-front{background:linear-gradient(145deg,#fff,#EEF2FF)}
+.flip-back{background:linear-gradient(145deg,#34D399,#16A34A);color:#fff;transform:rotateY(180deg)}
+.flip-front .q{font-weight:600;color:var(--ink)}
+.flip .hint{font-size:.8rem;color:var(--muted);margin-top:auto}
+.flip-back .hint{color:rgba(255,255,255,.85)}
+
+/* מילון מונחים */
+.glossary{padding:0;overflow:hidden}
+.gloss-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;cursor:pointer;
+  background:none;border:0;width:100%;font-family:inherit}
+.gloss-head h3{margin:0}
+.gloss-toggle{width:36px;height:36px;border-radius:50%;background:#EEF2FF;display:grid;place-items:center;transition:transform .3s}
+.gloss-toggle svg{width:20px;height:20px;color:var(--indigo-d)}
+.glossary.open .gloss-toggle{transform:rotate(180deg)}
+.gloss-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s var(--ease-out)}
+.glossary.open .gloss-body{grid-template-rows:1fr}
+.gloss-inner{overflow:hidden}
+.gloss-search{margin:0 24px 16px;width:calc(100% - 48px);padding:12px 16px;border-radius:var(--r-pill);border:3px solid #fff;
+  box-shadow:var(--sh-press);font-family:inherit;font-size:1rem;background:#F8FAFF}
+.gloss-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:0 24px 24px}
+.gloss-item{padding:14px 16px;border-radius:14px;background:#fff;box-shadow:var(--sh-clay-sm);border:2px solid #fff}
+.gloss-item .t{font-family:"Rubik";font-weight:700;color:var(--indigo-d);direction:ltr;text-align:right;display:flex;justify-content:space-between;gap:8px}
+.gloss-item .t .he{font-family:"Fredoka";color:var(--ink)}
+.gloss-item p{margin:6px 0 0;font-size:.92rem;color:var(--muted)}
+
+/* =================================================================
+   עמוד 3 — מעבדה אינטראקטיבית (סגנונות)
+   ================================================================= */
+.lab{padding:24px;margin-bottom:28px}
+.lab-head{display:flex;align-items:center;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.lab-head .badge-ic{width:50px;height:50px;border-radius:15px;display:grid;place-items:center;box-shadow:var(--sh-clay-sm);flex:0 0 auto}
+.lab-head .badge-ic svg{width:28px;height:28px;color:#fff}
+.lab-head h3{margin:0;font-size:1.4rem}
+.lab-head .tag{margin-inline-start:auto;font-size:.85rem;font-weight:700;color:#fff;padding:5px 12px;border-radius:var(--r-pill);
+  background:linear-gradient(145deg,var(--purple),var(--indigo-d))}
+.lab-desc{color:var(--muted);margin-bottom:16px}
+.try{display:flex;gap:12px;align-items:flex-start;background:linear-gradient(145deg,#FFF7E6,#FEF3C7);
+  border:3px solid #fff;border-radius:var(--r-sm);padding:13px 16px;margin:14px 0;box-shadow:var(--sh-clay-sm)}
+.try .ic{flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:linear-gradient(145deg,var(--amber-l),var(--amber));
+  display:grid;place-items:center}
+.try .ic svg{width:20px;height:20px;color:#7A4E00}
+.try p{margin:0;font-size:.95rem;color:#7A4E00}
+.try b{color:#5b3b00}
+
+/* פקדים */
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:16px 0}
+.slider{background:#fff;border-radius:var(--r-sm);padding:12px 16px;box-shadow:var(--sh-clay-sm);border:2px solid #fff}
+.slider label{display:flex;justify-content:space-between;font-weight:600;color:var(--ink);margin-bottom:8px;font-size:.95rem}
+.slider label .val{font-family:"Cascadia Code",monospace;color:var(--indigo-d);background:#EEF2FF;padding:2px 10px;border-radius:8px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:10px;border-radius:999px;
+  background:linear-gradient(90deg,var(--indigo),var(--purple));outline:none;cursor:pointer;direction:ltr}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
+  background:#fff;border:4px solid var(--indigo-d);box-shadow:var(--sh-clay-sm);cursor:pointer;transition:transform .15s var(--ease)}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:4px solid var(--indigo-d);cursor:pointer}
+.slider .hint{font-size:.8rem;color:var(--muted);margin-top:6px;text-align:center}
+
+.lab-stage{display:grid;gap:18px}
+@media(min-width:860px){.lab-stage.two{grid-template-columns:1fr 1fr}.lab-stage.grid-side{grid-template-columns:auto 1fr}}
+.canvas-box{background:#fff;border-radius:var(--r-sm);padding:14px;box-shadow:var(--sh-clay-sm);border:2px solid #fff;display:flex;flex-direction:column;align-items:center;gap:8px}
+.canvas-box h5{margin:0;color:var(--muted);font-size:.9rem;font-weight:600;align-self:flex-start}
+canvas.sim{max-width:100%;height:auto;border-radius:12px;touch-action:none}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.85rem;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:16px;height:16px;border-radius:5px;display:inline-block;border:2px solid rgba(0,0,0,.06)}
+.stat-row{display:flex;flex-wrap:wrap;gap:10px}
+.stat{background:#fff;border-radius:14px;padding:10px 16px;box-shadow:var(--sh-clay-sm);border:2px solid #fff;text-align:center;min-width:92px}
+.stat .v{font-family:"Fredoka";font-weight:700;font-size:1.5rem;color:var(--indigo-d);line-height:1}
+.stat .l{font-size:.78rem;color:var(--muted);margin-top:3px}
+
+/* כלי-זרוע (bandit) */
+.bandit-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:14px}
+.arm{background:linear-gradient(165deg,#fff,#EEF2FF);border:3px solid #fff;border-radius:var(--r-sm);
+  padding:14px 10px;text-align:center;box-shadow:var(--sh-clay-sm);cursor:pointer;transition:transform .15s var(--ease)}
+.arm:hover{transform:translateY(-4px)}
+.arm:active{transform:scale(.96)}
+.arm .machine{width:64px;height:64px;margin:0 auto 8px;border-radius:16px;display:grid;place-items:center;box-shadow:var(--sh-clay-sm);border:3px solid #fff;font-family:"Fredoka";font-weight:700;color:#fff;font-size:1.6rem;position:relative}
+.arm .estimate{font-family:"Cascadia Code",monospace;font-weight:700;color:var(--ink);font-size:1.05rem}
+.arm .pulls{font-size:.78rem;color:var(--muted)}
+.arm .estbar{height:8px;border-radius:999px;background:#E0E7FF;margin:8px 4px 4px;overflow:hidden}
+.arm .estbar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--green),var(--teal));transition:width .3s var(--ease-out)}
+.arm.best{outline:4px solid var(--amber);outline-offset:2px}
+
+/* discount bars */
+.disc-bars{display:flex;align-items:flex-end;gap:8px;height:240px;padding:14px;background:#fff;border-radius:var(--r-sm);box-shadow:var(--sh-clay-sm);border:2px solid #fff;overflow-x:auto}
+.disc-bar{flex:1;min-width:36px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px}
+.disc-bar .bar{width:100%;border-radius:10px 10px 4px 4px;background:linear-gradient(180deg,var(--amber-l),var(--amber));
+  transition:height .4s var(--ease);box-shadow:var(--sh-clay-sm);min-height:3px;position:relative}
+.disc-bar .bar b{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:.7rem;color:#7A4E00;white-space:nowrap}
+.disc-bar .t{font-size:.75rem;color:var(--muted);direction:ltr}
+
+/* RL loop sim */
+.rlloop-log{background:#0F172A;color:#E2E8F0;border-radius:var(--r-sm);padding:14px 16px;font-family:"Cascadia Code",monospace;
+  font-size:.9rem;direction:ltr;text-align:left;min-height:70px;border:3px solid #fff;box-shadow:var(--sh-clay-sm)}
+.rlloop-log .he{direction:rtl;display:block;font-family:"Rubik";color:#94A3B8;margin-top:6px;text-align:right}
+
+/* Q-update inspector */
+.qui-formula{direction:ltr;background:#0F172A;border-radius:var(--r-sm);padding:18px;border:3px solid #fff;box-shadow:var(--sh-clay-sm);
+  font-family:"Cascadia Code",monospace;color:#E2E8F0;overflow-x:auto;font-size:1.05rem;line-height:2}
+.qui-term{padding:3px 7px;border-radius:8px;transition:background .3s,transform .3s;display:inline-block}
+.qui-term.live{background:rgba(252,211,77,.25);transform:scale(1.08)}
+.qui-steps{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.qui-step{background:#fff;border-radius:12px;padding:10px 14px;box-shadow:var(--sh-clay-sm);opacity:.4;transition:opacity .3s,transform .3s;border:2px solid #fff}
+.qui-step.on{opacity:1;transform:translateX(-4px)}
+.qui-step .calc{font-family:"Cascadia Code",monospace;direction:ltr;float:left;color:var(--indigo-d);font-weight:700}
+
+/* badges */
+.badges-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.badge{padding:18px 14px;text-align:center;border-radius:var(--r-sm);border:3px solid #fff;box-shadow:var(--sh-clay-sm);
+  transition:transform .25s var(--ease);position:relative}
+.badge.locked{filter:grayscale(1);opacity:.5}
+.badge.unlocked{background:linear-gradient(160deg,#FFF7E6,#FEF3C7);animation:pop .5s var(--ease)}
+.badge .medal{width:56px;height:56px;margin:0 auto 8px;border-radius:50%;display:grid;place-items:center;box-shadow:var(--sh-clay-sm)}
+.badge .medal svg{width:30px;height:30px;color:#fff}
+.badge .t{font-weight:700;color:var(--ink);font-size:.95rem}
+.badge .d{font-size:.78rem;color:var(--muted);margin-top:3px}
+
+/* toast */
+#toastRoot{position:fixed;bottom:24px;inset-inline-start:50%;transform:translateX(50%);z-index:200;
+  display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none}
+.toast{background:linear-gradient(145deg,#fff,#EEF2FF);border:3px solid #fff;border-radius:var(--r-pill);
+  padding:13px 22px;box-shadow:var(--sh-pop);font-weight:700;color:var(--ink);display:flex;align-items:center;gap:10px;
+  animation:toastIn .4s var(--ease) both}
+.toast svg{width:22px;height:22px}
+@keyframes toastIn{from{opacity:0;transform:translateY(20px) scale(.9)}to{opacity:1;transform:none}}
+
+/* confetti */
+#confettiRoot{position:fixed;inset:0;pointer-events:none;z-index:150;overflow:hidden}
+.confetti{position:absolute;will-change:transform,opacity}
+
+/* footer */
+.foot{text-align:center;color:var(--muted);padding:30px 16px;font-size:.9rem;position:relative;z-index:1}
+
+/* ===== עמוד 3 — משחקי למידה (סגנונות חדשים) ===== */
+.game-tabs{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.game-tab{flex:1;min-width:170px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;
+  font-family:"Fredoka";font-weight:600;font-size:1.08rem;color:var(--ink);background:#fff;border:3px solid #fff;
+  border-radius:var(--r);padding:15px 18px;box-shadow:var(--sh-clay-sm);transition:transform .15s var(--ease),box-shadow .2s}
+.game-tab svg{width:24px;height:24px}
+.game-tab:hover{transform:translateY(-3px)}
+.game-tab.active{background:linear-gradient(145deg,var(--indigo),var(--indigo-d));color:#fff;box-shadow:var(--sh-pop)}
+.how-read{display:flex;gap:12px;align-items:flex-start;background:linear-gradient(145deg,#EFF6FF,#DBEAFE);border:3px solid #fff;
+  border-radius:var(--r-sm);padding:14px 16px;box-shadow:var(--sh-clay-sm);margin-bottom:18px}
+.how-read .ic{flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:linear-gradient(145deg,#60A5FA,var(--indigo-d));display:grid;place-items:center}
+.how-read .ic svg{width:20px;height:20px;color:#fff}
+.how-read p{margin:0;font-size:.95rem;color:var(--ink-2)}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+.team-panel{padding:16px;border-radius:var(--r-sm);border:3px solid #fff;box-shadow:var(--sh-clay-sm);background:#fff}
+.team-panel h5{margin:0 0 8px;font-size:1.05rem;display:flex;align-items:center;gap:8px;color:var(--ink)}
+.team-panel h5 .dot{width:15px;height:15px;border-radius:50%;flex:0 0 auto}
+.team-panel .metric{font-family:"Fredoka";font-weight:700;font-size:1.7rem;line-height:1;color:var(--ink)}
+.team-panel .ml{font-size:.8rem;color:var(--muted)}
+.skill-bar{height:15px;border-radius:999px;background:#E5E9F5;overflow:hidden;margin:8px 0 6px;box-shadow:var(--sh-press)}
+.skill-bar i{display:block;height:100%;border-radius:999px;transition:width .4s var(--ease-out)}
+.narrative{padding:18px 20px;border-radius:var(--r-sm);border:3px solid #fff;margin:16px 0;
+  background:linear-gradient(145deg,#EEF2FF,#FAE8FF);box-shadow:var(--sh-clay-sm)}
+.narrative .phase-badge{display:inline-flex;align-items:center;gap:8px;font-weight:700;color:#fff;
+  padding:6px 15px;border-radius:999px;font-size:.85rem;margin-bottom:10px}
+.narrative .ntext{font-size:1.1rem;color:var(--ink);font-weight:500;margin:0;line-height:1.6;min-height:3.2em}
+.phase-track{display:flex;gap:6px;margin-top:14px}
+.phase-track .ph{flex:1;height:9px;border-radius:999px;background:#D9DEF0;transition:background .3s}
+.phase-track .ph.on{background:linear-gradient(90deg,var(--indigo),var(--purple))}
+.decision-log{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.decision-log .d{font-size:.82rem;font-weight:600;padding:6px 12px;border-radius:999px;background:#fff;box-shadow:var(--sh-clay-sm);border:2px solid #fff}
+.decision-log .d.explore{color:#B45309} .decision-log .d.exploit{color:#4338CA}
+.howbots{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
+.howbots .st{background:#fff;border:3px solid #fff;border-radius:16px;padding:13px 11px;box-shadow:var(--sh-clay-sm);text-align:center}
+.howbots .st .ic{width:40px;height:40px;border-radius:12px;margin:0 auto 8px;display:grid;place-items:center;box-shadow:var(--sh-clay-sm)}
+.howbots .st .ic svg{width:22px;height:22px;color:#fff}
+.howbots .st b{font-size:.98rem;color:var(--ink);display:block;margin-bottom:3px}
+.howbots .st span{font-size:.82rem;color:var(--muted);line-height:1.45}
+.thoughts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.thought{display:flex;gap:10px;align-items:center;background:#fff;border:2px solid #fff;border-radius:12px;padding:9px 13px;box-shadow:var(--sh-clay-sm);font-size:.92rem;color:var(--ink-2);min-height:66px}
+.thought .dot{width:13px;height:13px;border-radius:50%;flex:0 0 auto}
+.thought .t{flex:1;min-width:0;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.thought .mode{font-weight:700;font-size:.76rem;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.thought .mode.explore{background:#FEF3C7;color:#B45309} .thought .mode.exploit{background:#E0E7FF;color:#4338CA}
+.round-timer{display:flex;align-items:center;gap:10px;background:#fff;border:3px solid #fff;border-radius:999px;box-shadow:var(--sh-clay-sm);padding:7px 14px;font-weight:700;color:var(--ink);width:100%;margin-bottom:8px;font-size:.92rem}
+.round-timer.plan{background:linear-gradient(145deg,#EEF2FF,#E0E7FF)}
+.round-timer.chase{background:linear-gradient(145deg,#FFF7E6,#FFE4E6)}
+.round-timer svg{width:18px;height:18px;flex:0 0 auto}
+.round-timer .secs{font-family:"Cascadia Code",monospace;color:var(--indigo-d);white-space:nowrap}
+.round-timer.chase .secs{color:var(--red-d)}
+.round-timer .bar{flex:1;height:10px;border-radius:999px;background:#E5E9F5;overflow:hidden;min-width:50px}
+.round-timer .bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--indigo),var(--purple));transition:width .15s linear}
+.round-timer.chase .bar i{background:linear-gradient(90deg,var(--amber),var(--red))}
+.level-badge{display:inline-flex;align-items:center;gap:8px;color:#fff;font-weight:700;border-radius:999px;padding:7px 18px;font-size:1.02rem;box-shadow:var(--sh-clay-sm);margin-bottom:8px;transition:background .5s var(--ease-out);align-self:stretch;justify-content:center;border:3px solid rgba(255,255,255,.6)}
+.level-badge svg{width:19px;height:19px;flex:0 0 auto}
+.level-badge b{font-family:"Fredoka",sans-serif}
+.deepdive{margin-top:16px;background:linear-gradient(145deg,#fff,#F4F6FF);border:3px solid #fff;border-radius:var(--r-sm);box-shadow:var(--sh-clay-sm);padding:2px 18px}
+.deepdive summary{cursor:pointer;font-family:"Fredoka",sans-serif;font-weight:600;color:var(--indigo-d);padding:14px 0;list-style:none;display:flex;align-items:center;gap:8px}
+.deepdive summary::-webkit-details-marker{display:none}
+.deepdive summary svg{width:20px;height:20px;color:var(--indigo-d)}
+.deepdive .dd-body{padding:0 0 16px}
+.deepdive .dd-body p{margin:0 0 10px}
+.deepdive .dd-body b{color:var(--ink)}
+
+/* ---------- רספונסיביות ---------- */
+@media(max-width:880px){
+  .hero{grid-template-columns:1fr;text-align:center;min-height:auto}
+  .hero-tag{margin-inline:auto}
+  .hero-stats,.btn-row{justify-content:center}
+  .hero-stage{max-width:340px;order:-1}
+  .learn-grid{grid-template-columns:1fr}
+  .toc{position:static;max-height:none;display:flex;gap:8px;overflow-x:auto;flex-wrap:nowrap}
+  .toc h4{display:none}
+  .toc a{white-space:nowrap}
+  .confuse{grid-template-columns:1fr}
+  .confuse .vs{padding:6px}
+}
+@media(max-width:640px){
+  .nav-links{position:fixed;top:calc(var(--nav-h) + 6px);inset-inline:14px;flex-direction:column;align-items:stretch;
+    background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border:3px solid #fff;border-radius:var(--r);
+    box-shadow:var(--sh-clay);padding:10px;gap:6px;margin:0;transform-origin:top;display:none}
+  .nav-links.open{display:flex;animation:pageIn .3s var(--ease-out)}
+  .nav-toggle{display:grid;place-items:center;margin-inline-start:auto;width:46px;height:46px;border-radius:14px;
+    border:3px solid #fff;background:#fff;box-shadow:var(--sh-clay-sm);cursor:pointer}
+  .nav-toggle svg{width:24px;height:24px;color:var(--indigo-d)}
+  .nav-score{order:-1}
+  .section{margin:46px 0}
+  .lab{padding:16px}
+  .lesson{padding:20px}
+}
+
+/* ---------- העדפת תנועה מופחתת ---------- */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+  .brand .logo{animation:none}
+}
+</style>
+</head>
+<body>
+<div class="bg-base"></div>
+<canvas id="bgCanvas" aria-hidden="true"></canvas>
+
+<div class="nav-wrap">
+  <nav class="nav" aria-label="ניווט ראשי">
+    <button class="brand" data-route="home" aria-label="דף הבית">
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/></svg></span>
+      <span>RL בכיף</span>
+    </button>
+    <button class="nav-toggle" id="navToggle" aria-label="פתיחת תפריט" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <div class="nav-links" id="navLinks">
+      <button class="nav-btn" data-route="home">דף הבית</button>
+      <button class="nav-btn" data-route="learn">ללמוד בקלות</button>
+      <button class="nav-btn" data-route="play">לשחק ולנסות</button>
+    </div>
+  </nav>
+</div>
+
+<main id="app"></main>
+
+<footer class="foot">
+  נבנה באהבה ללומדי AI · כל הסימולציות רצות אצלך בדפדפן, ללא ספריות חיצוניות · <span class="en">Reinforcement Learning</span> בעברית
+</footer>
+
+<div id="toastRoot" aria-live="polite"></div>
+<div id="confettiRoot" aria-hidden="true"></div>
+<div class="tooltip" id="tooltip" role="tooltip"></div>
+
+<script>
+/* =====================================================================
+   RL בכיף — אפליקציית עמוד יחיד ללימוד Reinforcement Learning
+   הכול vanilla JS, ללא ספריות. מבנה: כלי-עזר → מצב → רקע → ניתוב → דפים
+   ===================================================================== */
+(function(){
+"use strict";
+
+/* ------------------------- כלי-עזר ------------------------- */
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const randInt=n=>Math.floor(Math.random()*n);
+const fmt=(x,d=2)=>Number(x).toFixed(d);
+const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* יוצר אלמנט DOM נוח: el('div',{class:'x',onClick:fn}, child1, child2...) */
+function el(tag, props, ...kids){
+  const n=document.createElement(tag);
+  if(props) for(const k in props){
+    const v=props[k];
+    if(k==='class') n.className=v;
+    else if(k==='html') n.innerHTML=v;
+    else if(k==='style' && typeof v==='object') Object.assign(n.style,v);
+    else if(k.startsWith('on')&&typeof v==='function') n.addEventListener(k.slice(2).toLowerCase(),v);
+    else if(k==='dataset') Object.assign(n.dataset,v);
+    else if(v!==false&&v!=null) n.setAttribute(k,v);
+  }
+  for(const kid of kids.flat()){ if(kid==null||kid===false) continue;
+    n.appendChild(typeof kid==='string'||typeof kid==='number'?document.createTextNode(String(kid)):kid); }
+  return n;
+}
+/* יוצר SVG פנימי (אייקונים בנוסח Lucide — לא אמוג'י) */
+function svg(paths, opt={}){
+  const s=`<svg viewBox="0 0 24 24" fill="${opt.fill||'none'}" stroke="${opt.stroke||'currentColor'}" stroke-width="${opt.sw||2.2}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+  const span=document.createElement('span'); span.innerHTML=s; span.style.display='inline-flex'; return span;
+}
+const ICON={
+  loop:'<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/>',
+  reward:'<path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.3 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/>',
+  policy:'<path d="M4 5h16M4 12h10M4 19h7"/><circle cx="18" cy="16" r="3"/>',
+  trial:'<path d="M9 3v4l-5 9a4 4 0 0 0 3.5 6h9A4 4 0 0 0 20 16l-5-9V3"/><path d="M8 3h8"/><path d="M7.5 14h9"/>',
+  brain:'<path d="M9.5 2a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 1 5 3 3 0 0 0 5 1.5V5a3 3 0 0 0-1-3z"/><path d="M14.5 2a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-1 5 3 3 0 0 1-5 1.5"/>',
+  play:'<path d="M6 4l14 8-14 8z" fill="currentColor" stroke="none"/>',
+  pause:'<rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor" stroke="none"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor" stroke="none"/>',
+  step:'<path d="M5 4l10 8-10 8z" fill="currentColor" stroke="none"/><rect x="17" y="4" width="3" height="16" rx="1" fill="currentColor" stroke="none"/>',
+  reset:'<path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.3 2.6L3 8"/><path d="M3 3v5h5"/>',
+  bolt:'<path d="M13 2L4 14h6l-1 8 9-12h-6z" fill="currentColor" stroke="none"/>',
+  rocket:'<path d="M5 13c-2 1-3 5-3 5s4-1 5-3M12 2c4 2 7 6 6 12l-4 3-4-4 3-4c0-3 0-7-1-7z"/><circle cx="14.5" cy="9.5" r="1.5"/>',
+  car:'<path d="M5 13l1.5-4.5A2 2 0 0 1 8.4 7h7.2a2 2 0 0 1 1.9 1.5L19 13M5 13h14v4H5z"/><circle cx="8" cy="17" r="1.5"/><circle cx="16" cy="17" r="1.5"/>',
+  robot:'<rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 4h6"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/>',
+  chat:'<path d="M21 12a8 8 0 0 1-11.4 7.2L3 21l1.8-6.6A8 8 0 1 1 21 12z"/>',
+  tip:'<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>',
+  warn:'<path d="M12 2L1 21h22L12 2z"/><path d="M12 9v5M12 17v.5"/>',
+  when:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  chevron:'<path d="M6 9l6 6 6-6"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  slot:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8"/><circle cx="12" cy="17" r="1.5"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/>',
+  calc:'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 6h8M8 11h2M12 11h2M8 15h2M12 15h2M8 19h6"/>',
+  medal:'<circle cx="12" cy="15" r="6"/><path d="M9 9L6 2M15 9l3-7"/><path d="M12 13l.9 1.8 2 .3-1.4 1.4.3 2-1.8-1-1.8 1 .3-2L9.1 15l2-.3z"/>',
+  arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+  book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19a2 2 0 0 1 2-2h13"/>',
+  joystick:'<circle cx="12" cy="7" r="3"/><path d="M12 10v6M8 20h8a2 2 0 0 0 2-2 2 2 0 0 0-2-2H8a2 2 0 0 0-2 2 2 2 0 0 0 2 2z"/>',
+  spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/>',
+  check:'<path d="M4 12l5 5L20 6"/>',
+};
+
+/* ------------------------- מצב ושמירה (localStorage) ------------------------- */
+const SAVE_KEY='rl_fun_progress_v1';
+const state = load();
+function load(){
+  try{ return Object.assign(defaults(), JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')); }
+  catch(e){ return defaults(); }
+}
+function defaults(){ return { score:0, badges:{}, done:{} }; }
+function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){} }
+function addScore(n){ state.score+=n; save(); updateScoreUI(); }
+function updateScoreUI(){
+  const t=$('#scoreVal'); if(!t) return;
+  const target=state.score; const cur=+t.textContent||0;
+  if(prefersReduced){t.textContent=target;return;}
+  const start=performance.now(),dur=500;
+  (function tick(now){const p=clamp((now-start)/dur,0,1);t.textContent=Math.round(lerp(cur,target,p));if(p<1)requestAnimationFrame(tick);})(performance.now());
+}
+
+/* תגים/הישגים */
+const BADGES={
+  curious:{t:'סקרן',d:'סיימת לקרוא את ההסבר הפשוט',ic:ICON.book,c:'#14B8A6'},
+  watcher:{t:'צופה מיומן',d:'הפעלת אימון וראית מחשב לומד',ic:ICON.play,c:'#22C55E'},
+  catchers_pro:{t:'התופסים למדו לרדוף',d:'קבוצת התופסים שיפרה את הרדיפה',ic:ICON.target,c:'#EF4444'},
+  runners_pro:{t:'הבורחים למדו לברוח',d:'קבוצת הבורחים למדה להימלט',ic:ICON.rocket,c:'#6366F1'},
+  goal:{t:'גול ראשון!',d:'קבוצת כדורגל למדה להבקיע',ic:ICON.reward,c:'#F59E0B'},
+};
+function unlock(id){
+  if(state.badges[id]) return false;
+  state.badges[id]=Date.now(); addScore(50); save();
+  const b=BADGES[id]; toast('הישג חדש! '+b.t, b.c, ICON.medal);
+  if(typeof window.__rlRefreshBadges==='function') window.__rlRefreshBadges();
+  return true;
+}
+function markDone(id, pts=20){ if(!state.done[id]){ state.done[id]=true; addScore(pts); save(); return true;} return false; }
+
+/* טוסט */
+function toast(msg, color='#6366F1', icon=ICON.spark){
+  const root=$('#toastRoot'); if(!root) return;
+  const ic=svg(icon,{stroke:color,fill:icon===ICON.medal||icon===ICON.reward?color:'none'});
+  const t=el('div',{class:'toast'}, ic, msg);
+  ic.style.color=color;
+  root.appendChild(t);
+  setTimeout(()=>{t.style.transition='opacity .4s, transform .4s';t.style.opacity='0';t.style.transform='translateY(20px)';setTimeout(()=>t.remove(),400);}, 2700);
+}
+
+/* קונפטי חגיגי */
+function confetti(x=innerWidth/2, y=innerHeight/3){
+  if(prefersReduced) return;
+  const root=$('#confettiRoot'); if(!root) return;
+  const colors=['#6366F1','#EC4899','#F59E0B','#22C55E','#06B6D4','#A855F7','#FCD34D'];
+  for(let i=0;i<90;i++){
+    const c=el('div',{class:'confetti'});
+    const size=rnd(7,14);
+    c.style.cssText+='left:'+x+'px;top:'+y+'px;width:'+size+'px;height:'+size+'px;background:'+colors[randInt(colors.length)]+';border-radius:'+(Math.random()<.5?'50%':'3px')+';';
+    root.appendChild(c);
+    const ang=rnd(0,Math.PI*2), vel=rnd(6,15), vx=Math.cos(ang)*vel; let vyy=Math.sin(ang)*vel-rnd(4,10);
+    const rot=rnd(0,360), drot=rnd(-12,12); let px=0,py=0,t=0;
+    (function fall(){ t++; vyy+=0.45; px+=vx*(1-t/120); py+=vyy;
+      c.style.transform='translate('+px+'px,'+py+'px) rotate('+(rot+drot*t)+'deg)';
+      c.style.opacity=String(clamp(1-t/110,0,1));
+      if(t<110) requestAnimationFrame(fall); else c.remove();
+    })();
+  }
+}
+
+/* ------------------------- רקע אנימטיבי (בועות גרדיאנט) ------------------------- */
+function startBackground(){
+  const cv=$('#bgCanvas'),ctx=cv.getContext('2d');
+  let W,H,blobs=[];
+  const palette=[[129,140,248],[168,85,247],[236,72,153],[34,197,94],[6,182,212],[252,211,77]];
+  function resize(){ const dpr=Math.min(devicePixelRatio||1,2);
+    W=cv.width=innerWidth*dpr; H=cv.height=innerHeight*dpr;
+    cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; }
+  resize(); addEventListener('resize',resize);
+  for(let i=0;i<6;i++){ const c=palette[i%palette.length];
+    blobs.push({x:rnd(0,1),y:rnd(0,1),r:rnd(.18,.34),dx:rnd(-.00006,.00006),dy:rnd(-.00006,.00006),c,ph:rnd(0,6.28)}); }
+  function draw(t){
+    ctx.clearRect(0,0,W,H); ctx.globalCompositeOperation='lighter';
+    for(const b of blobs){
+      if(!prefersReduced){ b.x+=b.dx; b.y+=b.dy;
+        if(b.x<-.2||b.x>1.2)b.dx*=-1; if(b.y<-.2||b.y>1.2)b.dy*=-1; }
+      const cx=b.x*W + Math.sin(t*0.0002+b.ph)*40, cy=b.y*H + Math.cos(t*0.00017+b.ph)*40;
+      const rad=b.r*Math.min(W,H);
+      const g=ctx.createRadialGradient(cx,cy,0,cx,cy,rad);
+      g.addColorStop(0,'rgba('+b.c[0]+','+b.c[1]+','+b.c[2]+',0.28)');
+      g.addColorStop(1,'rgba('+b.c[0]+','+b.c[1]+','+b.c[2]+',0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,rad,0,6.2832); ctx.fill();
+    }
+    ctx.globalCompositeOperation='source-over';
+    if(!prefersReduced) requestAnimationFrame(draw);
+  }
+  if(prefersReduced) draw(0); else requestAnimationFrame(draw);
+}
+
+/* ===================================================================
+   ניתוב (Router) — שלושה דפים, עם מעבר חלק
+   =================================================================== */
+const routes={};
+let current=null;
+function register(name,fn){ routes[name]=fn; }
+function go(name){
+  if(!routes[name]) name='home';
+  current=name;
+  const app=$('#app');
+  app.innerHTML='';
+  $$('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.route===name));
+  $('#navLinks')&&$('#navLinks').classList.remove('open');
+  $('#navToggle')&&$('#navToggle').setAttribute('aria-expanded','false');
+  const page=el('div',{class:'page'});
+  app.appendChild(page);
+  routes[name](page);
+  window.scrollTo(0,0);
+  if(history.replaceState) history.replaceState(null,'','#'+name);
+}
+
+/* ניווט בלחיצה */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-route]'); if(b){ go(b.dataset.route); }
+});
+$('#navToggle').addEventListener('click',()=>{
+  const nl=$('#navLinks'),open=nl.classList.toggle('open');
+  $('#navToggle').setAttribute('aria-expanded',String(open));
+});
+
+/* ===================================================================
+   עמוד 1 — בית / נחיתה
+   =================================================================== */
+register('home', renderHome);
+function renderHome(root){
+  /* ----- HERO ----- */
+  const hero=el('section',{class:'hero'});
+  const left=el('div',{},
+    el('span',{class:'eyebrow'}, svg(ICON.spark,{stroke:'#6366F1'}), 'ברוכים הבאים אל עולם הלמידה מתגמולים'),
+    el('h1',{class:'hero-title'}, 'ללמוד ',
+      el('span',{class:'grad'},'בלי לפחד'),
+      ' איך מכונה ',
+      el('span',{class:'grad'},'לומדת'),
+      el('div',{class:'hero-en'},'Reinforcement Learning · למידה מחוזקת')
+    ),
+    el('p',{class:'hero-tag'},'איך סוכן לומד לקבל החלטות דרך ניסוי, טעייה ותגמול — כאן נסביר את זה בצורה פשוטה, צבעונית ומלאת אנימציות, בלי נוסחאות מפחידות.'),
+    el('div',{class:'btn-row'},
+      el('button',{class:'btn',dataset:{route:'learn'}}, svg(ICON.book,{stroke:'#fff'}), 'ללמוד בקלות'),
+      el('button',{class:'btn green',dataset:{route:'play'}}, svg(ICON.joystick,{stroke:'#fff'}), 'לשחק ולנסות')
+    ),
+    el('div',{class:'hero-stats'},
+      chip('#6366F1','2 משחקים שבהם רואים מחשב לומד'),
+      chip('#22C55E','הסבר פשוט, בלי מתמטיקה'),
+      chip('#EC4899','100% עברית')
+    )
+  );
+  const stage=el('div',{class:'hero-stage'});
+  hero.appendChild(left); hero.appendChild(stage);
+  root.appendChild(hero);
+  buildHeroLoop(stage);
+
+  /* ----- כרטיסי מושג ----- */
+  const concepts=[
+    {ic:ICON.loop,c:['#6366F1','#4F46E5'],h:'לולאת הלמידה',en:'The RL Loop',p:'הסוכן רואה מצב, בוחר פעולה, מקבל תגמול ומצב חדש — וחוזר חלילה.'},
+    {ic:ICON.reward,c:['#F59E0B','#D97706'],h:'תגמול',en:'Reward',p:'מספר קטן שאומר לסוכן "כל הכבוד!" או "אופס". זה כל מה שמנחה אותו.'},
+    {ic:ICON.policy,c:['#A855F7','#7C3AED'],h:'מדיניות',en:'Policy (π)',p:'האסטרטגיה שמחליטה איזו פעולה לבחור בכל מצב — מאקראית ועד חכמה.'},
+    {ic:ICON.trial,c:['#22C55E','#16A34A'],h:'ניסוי וטעייה',en:'Trial & Error',p:'לומדים מהצלחות וגם מטעויות, בדיוק כמו ילד שמתחיל ללכת.'},
+  ];
+  root.appendChild(el('section',{class:'section'},
+    el('div',{style:{textAlign:'center'}},
+      el('h2',{class:'section-title'},'ארבעה רעיונות, וכבר הבנתם את הרוח'),
+      el('p',{class:'section-sub',style:{marginInline:'auto'}},'אלה אבני היסוד של RL. עברו עם העכבר מעל כל כרטיס.')
+    ),
+    el('div',{class:'cards-grid',style:{marginTop:'28px'}},
+      concepts.map(c=>el('div',{class:'concept clay'},
+        el('div',{class:'ic',style:{background:'linear-gradient(145deg,'+c.c[0]+','+c.c[1]+')'}}, svg(c.ic,{stroke:'#fff',fill:c.ic===ICON.reward?'#fff':'none'})),
+        el('span',{class:'en-tag'},c.en),
+        el('h3',{},c.h),
+        el('p',{},c.p)
+      ))
+    )
+  ));
+
+  /* ----- רצועת "למה זה חשוב" ----- */
+  const whys=[
+    {ic:ICON.brain,c:['#6366F1','#4F46E5'],h:'AlphaGo',p:'ניצחה את אלופי העולם במשחק Go — עם מהלכים שאיש לא חשב עליהם.'},
+    {ic:ICON.robot,c:['#A855F7','#7C3AED'],h:'רובוטיקה',p:'רובוטים לומדים ללכת, לתפוס חפצים ולשמור על שיווי משקל.'},
+    {ic:ICON.car,c:['#06B6D4','#0891B2'],h:'נהיגה אוטונומית',p:'קבלת החלטות בזמן אמת על הכביש — מתי לעצור, לפנות, להאיץ.'},
+    {ic:ICON.chat,c:['#EC4899','#DB2777'],h:'RLHF במודלי שפה',p:'כך מיישרים מודלים כמו ChatGPT לתשובות מועילות — בעזרת משוב אנושי.'},
+  ];
+  root.appendChild(el('section',{class:'section'},
+    el('div',{style:{textAlign:'center',marginBottom:'24px'}},
+      el('span',{class:'eyebrow'}, svg(ICON.bolt,{stroke:'#F59E0B',fill:'#F59E0B'}),'למה זה חשוב'),
+      el('h2',{class:'section-title'},'RL נמצא כבר בכל מקום')
+    ),
+    el('div',{class:'why-strip'},
+      whys.map(w=>el('div',{class:'why-card clay'},
+        el('div',{class:'ic',style:{background:'linear-gradient(145deg,'+w.c[0]+','+w.c[1]+')'}}, svg(w.ic,{stroke:'#fff'})),
+        el('h4',{},w.h), el('p',{},w.p)
+      ))
+    )
+  ));
+
+  /* ----- CTA סופי ----- */
+  root.appendChild(el('section',{class:'section'},
+    el('div',{class:'cta-band'},
+      el('h2',{},'מוכנים להפוך את התאוריה למשחק?'),
+      el('p',{class:'section-sub',style:{marginInline:'auto',marginBottom:'22px'}},'התחילו מההסבר הפשוט, או צללו ישר למשחקים ותראו את המחשב לומד מול העיניים.'),
+      el('div',{class:'btn-row',style:{justifyContent:'center'}},
+        el('button',{class:'btn',dataset:{route:'learn'}}, svg(ICON.book,{stroke:'#fff'}),'אני רוצה להבין בפשטות'),
+        el('button',{class:'btn green',dataset:{route:'play'}}, svg(ICON.play,{fill:'#fff',stroke:'none'}),'קחו אותי למשחקים')
+      )
+    )
+  ));
+}
+function chip(color,text){ return el('span',{class:'chip'}, el('span',{class:'dot',style:{background:color}}), text); }
+
+/* אנימציית לולאת ה-RL בהירו (SVG עם פעימה שעוברת סביב המעגל) */
+function buildHeroLoop(stage){
+  const NS='http://www.w3.org/2000/svg';
+  const size=420, cx=size/2, cy=size/2, R=140;
+  const nodes=[
+    {a:-90, label:'סוכן', en:'Agent', c:'#6366F1'},
+    {a:0,   label:'פעולה', en:'Action', c:'#A855F7'},
+    {a:90,  label:'תגמול', en:'Reward', c:'#F59E0B'},
+    {a:180, label:'מצב', en:'State', c:'#22C55E'},
+  ];
+  const s=document.createElementNS(NS,'svg');
+  s.setAttribute('viewBox','0 0 '+size+' '+size); s.setAttribute('class','loop-svg');
+  s.innerHTML='<defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366F1"/><stop offset=".5" stop-color="#EC4899"/><stop offset="1" stop-color="#F59E0B"/></linearGradient></defs>';
+  const ring=document.createElementNS(NS,'circle');
+  ring.setAttribute('cx',cx);ring.setAttribute('cy',cy);ring.setAttribute('r',R);
+  ring.setAttribute('fill','none');ring.setAttribute('stroke','url(#rg)');ring.setAttribute('stroke-width','10');
+  ring.setAttribute('stroke-dasharray','4 18');ring.setAttribute('stroke-linecap','round');
+  s.appendChild(ring);
+  if(!prefersReduced){ const an=document.createElementNS(NS,'animateTransform');
+    an.setAttribute('attributeName','transform');an.setAttribute('type','rotate');
+    an.setAttribute('from','0 '+cx+' '+cy);an.setAttribute('to','360 '+cx+' '+cy);
+    an.setAttribute('dur','24s');an.setAttribute('repeatCount','indefinite');ring.appendChild(an); }
+  const nodeEls=[];
+  nodes.forEach(n=>{
+    const x=cx+R*Math.cos(n.a*Math.PI/180), y=cy+R*Math.sin(n.a*Math.PI/180);
+    const halo=document.createElementNS(NS,'circle');
+    halo.setAttribute('cx',x);halo.setAttribute('cy',y);halo.setAttribute('r',40);
+    halo.setAttribute('fill',n.c);halo.setAttribute('opacity','0');
+    const circ=document.createElementNS(NS,'circle');
+    circ.setAttribute('cx',x);circ.setAttribute('cy',y);circ.setAttribute('r',38);
+    circ.setAttribute('fill','#fff');circ.setAttribute('stroke',n.c);circ.setAttribute('stroke-width','5');
+    circ.setAttribute('filter','drop-shadow(4px 6px 10px rgba(79,70,229,.25))');
+    const t1=document.createElementNS(NS,'text');
+    t1.setAttribute('x',x);t1.setAttribute('y',y-2);t1.setAttribute('text-anchor','middle');
+    t1.setAttribute('font-size','17');t1.setAttribute('font-weight','700');t1.setAttribute('fill',n.c);
+    t1.setAttribute('font-family','Fredoka, sans-serif');t1.textContent=n.label;
+    const t2=document.createElementNS(NS,'text');
+    t2.setAttribute('x',x);t2.setAttribute('y',y+15);t2.setAttribute('text-anchor','middle');
+    t2.setAttribute('font-size','11');t2.setAttribute('fill','#64748B');t2.textContent=n.en;
+    s.appendChild(halo);s.appendChild(circ);s.appendChild(t1);s.appendChild(t2);
+    nodeEls.push({halo,circ});
+  });
+  const ct=document.createElementNS(NS,'text');
+  ct.setAttribute('x',cx);ct.setAttribute('y',cy-4);ct.setAttribute('text-anchor','middle');
+  ct.setAttribute('font-size','22');ct.setAttribute('font-weight','700');ct.setAttribute('fill','#312E81');
+  ct.setAttribute('font-family','Fredoka, sans-serif');ct.textContent='לולאת RL';
+  const ct2=document.createElementNS(NS,'text');
+  ct2.setAttribute('x',cx);ct2.setAttribute('y',cy+18);ct2.setAttribute('text-anchor','middle');
+  ct2.setAttribute('font-size','13');ct2.setAttribute('fill','#475569');ct2.textContent='לחצו לשחק';
+  s.appendChild(ct);s.appendChild(ct2);
+  const dot=document.createElementNS(NS,'circle');
+  dot.setAttribute('r','9');dot.setAttribute('fill','#fff');dot.setAttribute('stroke','#312E81');dot.setAttribute('stroke-width','3');
+  s.appendChild(dot);
+  s.style.cursor='pointer'; s.addEventListener('click',()=>go('play'));
+  stage.appendChild(s);
+
+  let active=-1;
+  if(!prefersReduced){
+    const t0=performance.now();
+    (function anim(now){
+      const period=4800, p=((now-t0)%period)/period, ang=-90+p*360;
+      dot.setAttribute('cx',cx+R*Math.cos(ang*Math.PI/180));
+      dot.setAttribute('cy',cy+R*Math.sin(ang*Math.PI/180));
+      const idx=Math.floor(p*4)%4;
+      if(idx!==active){ active=idx;
+        nodeEls.forEach((ne,i)=>{ ne.halo.style.transition='opacity .3s'; ne.halo.setAttribute('opacity', i===idx?'0.20':'0'); });
+      }
+      if(stage.isConnected) requestAnimationFrame(anim);
+    })(performance.now());
+  } else { nodeEls[0].halo.setAttribute('opacity','0.20'); dot.setAttribute('cx',cx);dot.setAttribute('cy',cy-R); }
+}
+
+/* ===================================================================
+   דפים 2 ו-3 — מוגדרים בקבצי-החלקים שבהמשך (placeholder עד שייטענו)
+   =================================================================== */
+register('learn', function(root){ root.appendChild(el('div',{class:'section',style:{textAlign:'center'}}, el('h2',{class:'section-title'},'טוען…'))); });
+register('play',  function(root){ root.appendChild(el('div',{class:'section',style:{textAlign:'center'}}, el('h2',{class:'section-title'},'טוען…'))); });
+
+/* חשיפה פנימית לשאר חלקי הקובץ (דפים 2-3) */
+const API={el,svg,ICON,go,state,save,addScore,markDone,unlock,toast,confetti,clamp,lerp,rnd,randInt,fmt,$,$$,register,BADGES,prefersReduced};
+window.__RL=API;
+
+/* ===================================================================
+   אתחול
+   =================================================================== */
+startBackground();
+updateScoreUI();
+/* נריץ את הדף ההתחלתי רק אחרי שכל החלקים נרשמו (ראו סוף הקובץ) */
+window.__rlBoot=function(){
+  const initial=(location.hash||'#home').slice(1);
+  go(routes[initial]?initial:'home');
+};
+})();
+</script>
+
+<!-- ===== עמוד 2 (ללמוד בקלות) ועמוד 3 (לשחק ולנסות) נטענים כאן ===== -->
+<script id="page-learn">
+/* =====================================================================
+   עמוד 2 — מה זה בכלל? הסבר פשוט לגמרי, בלי מתמטיקה
+   ===================================================================== */
+(function(){
+const A=window.__RL, {el,svg,ICON,go,$,$$,register,unlock,prefersReduced}=A;
+
+/* מילון קטן ופשוט (לטולטיפים ולמילון הנפתח) */
+const GLOSS=[
+ {k:'agent',en:'Agent',he:'סוכן',d:'מי שלומד ומחליט — אצלנו הדמות או המחשב במשחק.'},
+ {k:'reward',en:'Reward',he:'פרס / תגמול',d:'נקודות שהמחשב מקבל כשהוא עושה משהו טוב (ומאבד כשטועה).'},
+ {k:'action',en:'Action',he:'פעולה',d:'מה אפשר לעשות עכשיו — למשל לזוז ימינה או שמאלה.'},
+ {k:'state',en:'State',he:'מצב',d:'המצב הנוכחי — מה שהמחשב "רואה" ברגע הזה.'},
+ {k:'trial',en:'Trial & Error',he:'ניסוי וטעייה',d:'ללמוד מהצלחות ומטעויות — שוב ושוב, עד שמשתפרים.'},
+ {k:'exploration',en:'Exploration',he:'חקירה',d:'לנסות משהו חדש כדי לגלות אם הוא טוב יותר.'},
+ {k:'exploitation',en:'Exploitation',he:'ניצול',d:'לבחור במה שכבר עובד הכי טוב.'},
+ {k:'policy',en:'Policy',he:'אסטרטגיה',d:'ההרגל שהמחשב פיתח: באיזה מצב כדאי לעשות מה.'},
+ {k:'value',en:'Value',he:'ערך',d:'כמה "שווה" מצב מסוים בהתחשב בעתיד — לא רק בפרס המיידי.'},
+ {k:'discount',en:'Discount / γ',he:'סבלנות',d:'כמה אכפת למחשב מפרסים עתידיים מול פרס עכשיו. גבוה = סבלני וחושב רחוק.'},
+ {k:'episode',en:'Episode',he:'סבב / פרק',d:'ניסיון שלם אחד — מההתחלה ועד הסוף (תפיסה, גול, או סוף הזמן).'},
+ {k:'training',en:'Training',he:'אימון',d:'החזרה על אלפי סבבים שבהם המחשב משתפר לאט-לאט.'},
+ {k:'qtable',en:'Q-Table',he:'טבלת זיכרון',d:'הטבלה שבה המחשב רושם, לכל מצב, כמה טובה כל פעולה. זה כל ה"זיכרון" שלו.'},
+];
+const GMAP={}; GLOSS.forEach(g=>GMAP[g.k]=g);
+function T(key,label){ const g=GMAP[key]; if(!g) return document.createTextNode(label||key);
+  return el('span',{class:'term',tabindex:'0',role:'button',dataset:{def:key},'aria-label':g.he+' — '+g.d}, label||(g.he+' ('+g.en+')')); }
+
+/* טולטיפ גלובלי */
+const tip=$('#tooltip');
+function clampN(v,a,b){return Math.max(a,Math.min(b,v));}
+function showTip(t){ const g=GMAP[t.dataset.def]; if(!g)return;
+  tip.innerHTML='<b>'+g.he+'</b> <span style="direction:ltr;color:#A5B4FC">('+g.en+')</span><br>'+g.d;
+  tip.classList.add('show'); const r=t.getBoundingClientRect(),tw=tip.offsetWidth,th=tip.offsetHeight;
+  let left=clampN(r.left+r.width/2-tw/2,10,innerWidth-tw-10), top=r.top-th-12; if(top<10)top=r.bottom+12;
+  tip.style.left=left+'px'; tip.style.top=top+'px'; }
+function hideTip(){tip.classList.remove('show');}
+if(!window.__tipBound){ window.__tipBound=true;
+  document.addEventListener('mouseover',e=>{const t=e.target.closest('.term');if(t)showTip(t);});
+  document.addEventListener('mouseout',e=>{const t=e.target.closest('.term');if(t)hideTip();});
+  document.addEventListener('focusin',e=>{const t=e.target.closest('.term');if(t)showTip(t);});
+  document.addEventListener('focusout',e=>{const t=e.target.closest('.term');if(t)hideTip();});
+  window.addEventListener('scroll',hideTip,true); }
+
+function callout(type,icon,title,...body){ return el('div',{class:'callout '+type}, el('div',{class:'ic'},svg(icon,{stroke:'#fff'})), el('div',{}, el('b',{},title+' '), ...body)); }
+function P(...k){return el('p',{},...k);}
+
+/* דיאגרמת לולאה פשוטה (המחשב <-> העולם) */
+function loopDiagram(){
+  const wrap=el('div',{class:'clay-soft',style:{padding:'10px',margin:'18px 0',overflowX:'auto'}});
+  wrap.innerHTML='<svg viewBox="0 0 560 180" style="width:100%;min-width:480px;direction:ltr" role="img" aria-label="לולאת הלמידה">'+
+   '<defs><marker id="lah" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0 0L7 3L0 6Z" fill="#6366F1"/></marker>'+
+   '<marker id="lah2" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0 0L7 3L0 6Z" fill="#22C55E"/></marker></defs>'+
+   '<rect x="35" y="60" width="170" height="62" rx="18" fill="#fff" stroke="#6366F1" stroke-width="3"/>'+
+   '<text x="120" y="86" text-anchor="middle" font-family="Fredoka" font-weight="700" fill="#4F46E5" font-size="18">המחשב (סוכן)</text>'+
+   '<text x="120" y="107" text-anchor="middle" fill="#64748B" font-size="11">Agent</text>'+
+   '<rect x="355" y="60" width="170" height="62" rx="18" fill="#fff" stroke="#22C55E" stroke-width="3"/>'+
+   '<text x="440" y="86" text-anchor="middle" font-family="Fredoka" font-weight="700" fill="#16A34A" font-size="18">העולם / המשחק</text>'+
+   '<text x="440" y="107" text-anchor="middle" fill="#64748B" font-size="11">Environment</text>'+
+   '<path d="M210 80 H350" stroke="#6366F1" stroke-width="3" fill="none" marker-end="url(#lah)"/>'+
+   '<text x="280" y="70" text-anchor="middle" fill="#4F46E5" font-size="13" font-weight="600">עושה פעולה</text>'+
+   '<path d="M350 104 H210" stroke="#22C55E" stroke-width="3" fill="none" marker-end="url(#lah2)"/>'+
+   '<text x="280" y="124" text-anchor="middle" fill="#16A34A" font-size="13" font-weight="600">נותן פרס + מצב חדש</text>'+
+   '</svg>';
+  return wrap;
+}
+
+function renderLearn(root){
+  root.appendChild(el('section',{class:'section',style:{margin:'14px 0 8px',textAlign:'center'}},
+    el('span',{class:'eyebrow'},svg(ICON.brain,{stroke:'#6366F1'}),'הסבר פשוט, בלי מתמטיקה'),
+    el('h1',{class:'section-title'},'מה זה בעצם "מחשב שלומד"?'),
+    el('p',{class:'section-sub',style:{marginInline:'auto'}},'בלי נוסחאות. רק הרעיון: איך מחשב לומד לבד דרך ניסוי, טעייה ופרסים. ריחפו על כל מונח באנגלית כדי לראות הסבר קצר.')
+  ));
+
+  /* הרעיון הגדול */
+  root.appendChild(el('section',{class:'lesson clay'},
+    el('h3',{},'הרעיון הגדול — בדיוק כמו לאלף גור כלבים'),
+    P('כשמאלפים גור, לא מסבירים לו חוקים. הוא ',el('b',{},'מנסה'),' דברים, ומקבל ',el('b',{},'חטיף'),' כשהוא מצליח. אחרי הרבה פעמים הוא לומד מה משתלם. ',el('b',{},'בדיוק ככה מחשב לומד.')),
+    P('המחשב הוא ה',T('agent'),'. הוא נמצא ב',T('state'),' מסוים, עושה ',T('action'),', ומקבל ',T('reward'),' — וחוזר על זה שוב ושוב עד שמשתפר.'),
+    loopDiagram(),
+    callout('tip',ICON.tip,'בקיצור:',P('המחשב לא יודע כלום בהתחלה. הוא לומד אך ורק מהפרסים שהוא אוסף תוך כדי ניסיון.'))
+  ));
+
+  /* שלושת המרכיבים */
+  const cards=[
+    {ic:ICON.trial,c:['#22C55E','#16A34A'],h:'ניסוי וטעייה',en:'Trial & Error',p:'המחשב מנסה, נכשל, מצליח — ולומד מכל פעם. כמו ילד שלומד ללכת.'},
+    {ic:ICON.reward,c:['#F59E0B','#D97706'],h:'פרס',en:'Reward',p:'מספר קטן שאומר "כל הכבוד!" או "אופס". זה כל מה שמכוון את המחשב.'},
+    {ic:ICON.loop,c:['#6366F1','#4F46E5'],h:'חזרה אינסופית',en:'The Loop',p:'הסיפור הזה חוזר אלפי פעמים — וכך הלמידה מצטברת לאט-לאט.'},
+  ];
+  root.appendChild(el('section',{class:'section'},
+    el('h2',{class:'section-title',style:{textAlign:'center'}},'כל הקסם עומד על 3 דברים'),
+    el('div',{class:'cards-grid',style:{marginTop:'22px'}}, cards.map(c=>el('div',{class:'concept clay'},
+      el('div',{class:'ic',style:{background:'linear-gradient(145deg,'+c.c[0]+','+c.c[1]+')'}},svg(c.ic,{stroke:'#fff',fill:c.ic===ICON.reward?'#fff':'none'})),
+      el('span',{class:'en-tag'},c.en), el('h3',{},c.h), el('p',{},c.p))))
+  ));
+
+  /* איך זה לומד */
+  root.appendChild(el('section',{class:'lesson clay'},
+    el('h3',{},'אז איך המחשב באמת "לומד"?'),
+    P('פשוט מאוד: המחשב מנהל לעצמו ',el('b',{},'טבלת ניקוד'),' קטנה. לכל מצב הוא רושם איזו פעולה נתנה לו הכי הרבה פרסים בעבר.'),
+    el('ul',{},
+      el('li',{},'בהתחלה הטבלה ריקה — אז הוא פשוט ',el('b',{},'מנחש'),' וזז אקראית.'),
+      el('li',{},'בכל פעם שהוא מקבל פרס, הוא מעדכן את הטבלה: "אהא, הפעולה הזו במצב הזה — שווה!".'),
+      el('li',{},'עם הזמן הוא ',el('b',{},'מעדיף'),' את הפעולות המנצחות. וזהו, זה כל הסוד.')
+    ),
+    callout('when',ICON.bolt,'בלי לפחד:',P('יש מאחורי זה גם מתמטיקה (השיטה נקראת Q-Learning), אבל ',el('b',{},'ממש לא צריך אותה'),' כדי להבין. "טבלת ניקוד שמתעדכנת" — זה כל הסיפור.'))
+  ));
+
+  /* לחקור מול לנצל */
+  root.appendChild(el('section',{class:'lesson clay'},
+    el('h3',{},'הדילמה הכי חשובה: לחקור או לנצל?'),
+    P('בכל רגע המחשב צריך להחליט: ללכת על מה שכבר עובד (',T('exploitation'),'), או לנסות משהו חדש שאולי יהיה אפילו טוב יותר (',T('exploration'),')?'),
+    el('div',{class:'analogy clay-soft',style:{marginTop:'8px'}},
+      el('div',{class:'em',style:{background:'linear-gradient(145deg,#06B6D4,#0891B2)'}},svg(ICON.target,{stroke:'#fff'})),
+      el('div',{}, el('h4',{},'כמו לבחור מסעדה'), P('ללכת לאהובה (בטוח טעים) או לנסות חדשה (אולי מאכזב, אולי מדהים)? יותר מדי מכל צד — ומפספסים.'))),
+    callout('tip',ICON.spark,'האיזון:',P('בהתחלה כדאי לחקור הרבה (לא יודעים כלום), ועם הזמן פחות — כשכבר למדנו מה עובד. בדיוק את זה תראו קורה במשחקים!'))
+  ));
+
+  /* בדיקה עצמית */
+  root.appendChild(el('section',{class:'lesson clay'},
+    el('h3',{},'בדקו את עצמכם'),
+    el('p',{style:{color:'var(--muted)'}},'לחצו על כרטיס כדי לחשוף את התשובה:'),
+    el('div',{class:'quiz-grid'},
+      [['מה זה "פרס" (Reward)?','נקודות שהמחשב מקבל על פעולה טובה — זה מה שמכוון אותו ללמוד.'],
+       ['למה המחשב זז אקראית בהתחלה?','כי הוא עוד לא יודע כלום — הוא חוקר כדי לאסוף מידע.'],
+       ['מה ההבדל בין לחקור לנצל?','לחקור = לנסות חדש. לנצל = ללכת על מה שכבר עובד הכי טוב.']].map(([q,a])=>{
+        const card=el('button',{class:'flip',type:'button','aria-label':q}, el('div',{class:'flip-inner'},
+          el('div',{class:'flip-face flip-front'}, el('div',{class:'q'},q), el('div',{class:'hint'},'לחצו לתשובה')),
+          el('div',{class:'flip-face flip-back'}, el('div',{},a), el('div',{class:'hint'},'לחצו שוב'))));
+        card.addEventListener('click',()=>card.classList.toggle('flipped')); return card;})
+    )
+  ));
+
+  /* פרס מול ערך */
+  root.appendChild(el('section',{class:'lesson clay'},
+    el('h3',{},'פרס מול ערך — ההבדל הכי חשוב'),
+    P('זה הבלבול הנפוץ ביותר, אז שווה לעצור עליו. ',T('reward'),' זה מה שמקבלים ',el('b',{},'ממש עכשיו'),'. ',T('value'),' זה כמה ',el('b',{},'משתלם להיות במצב'),' בהתחשב בכל מה שיבוא אחר כך.'),
+    el('div',{class:'confuse'},
+      el('div',{class:'side a'}, el('h5',{},'פרס · מיידי'), P('הנקודות מהצעד הבודד הזה, כאן ועכשיו.')),
+      el('div',{class:'vs'},'מול'),
+      el('div',{class:'side b'}, el('h5',{},'ערך · עתידי'), P('שווי המצב כולו. גם אם הפרס עכשיו 0 — אם המצב מקרב למטרה, הערך שלו גבוה.'))),
+    callout('tip',ICON.tip,'דוגמה פשוטה:',P('משבצת ריקה ממש לפני המטרה נותנת 0 נקודות, אבל ה',el('b',{},'ערך'),' שלה ענק — כי ממנה קל מאוד להגיע לפרס הגדול. המחשב לומד להעריך מצבים, לא רק לרדוף אחרי פרסים מיידיים.'))
+  ));
+
+  /* מה קורה תוך כדי אימון */
+  root.appendChild(el('section',{class:'lesson clay'},
+    el('h3',{},'מה קורה תוך כדי האימון?'),
+    P('"אימון" זה פשוט חזרה על אותו דבר אלפי פעמים. ככה זה נראה מבפנים:'),
+    el('div',{class:'order-steps'},
+      [['בהתחלה','המחשב מנחש לגמרי — זז אקראית ונכשל הרבה. טבלת הזיכרון ריקה.'],
+       ['אחרי כמה ניסיונות','הוא מתחיל לזהות אילו פעולות הביאו פרסים, ומתחיל לחזור עליהן.'],
+       ['באמצע','הוא כבר פחות מנחש ויותר "מנצל" את מה שלמד. ההצלחות מצטברות.'],
+       ['בסוף','הוא נראה חכם ומדויק — אבל זו פשוט טבלת ניקוד שהתמלאה היטב.']
+      ].map(([t,d])=>el('div',{class:'order-step'}, el('div',{class:'n'}), el('div',{}, el('b',{},t), el('div',{style:{color:'var(--muted)'}},d))))
+    ),
+    callout('when',ICON.spark,'בדיוק את זה תראו במשחקים:',P('הגרפים בעמוד המשחקים מציירים את הסיפור הזה — קו שמטפס ככל שהמחשב משתפר.'))
+  ));
+
+  /* איפה בעולם */
+  const apps=[
+    {ic:ICON.brain,c:['#6366F1','#4F46E5'],h:'משחקים',p:'AlphaGo ניצחה אלופי עולם במשחק Go; בוטים שולטים בשחמט וב-Atari.'},
+    {ic:ICON.robot,c:['#A855F7','#7C3AED'],h:'רובוטים',p:'לומדים ללכת, לתפוס חפצים ולשמור על שיווי משקל בלי שתכנתו כל צעד.'},
+    {ic:ICON.car,c:['#06B6D4','#0891B2'],h:'נהיגה אוטונומית',p:'מתי לעצור, לפנות ולהאיץ — אלפי החלטות קטנות בזמן אמת.'},
+    {ic:ICON.spark,c:['#F59E0B','#D97706'],h:'המלצות',p:'יוטיוב ונטפליקס לומדים מה להציע לכם הלאה כדי שתישארו.'},
+    {ic:ICON.chat,c:['#EC4899','#DB2777'],h:'ChatGPT',p:'בשיטת RLHF בני אדם מדרגים תשובות, והמודל לומד לתת תשובות מועילות.'},
+  ];
+  root.appendChild(el('section',{class:'section'},
+    el('h2',{class:'section-title',style:{textAlign:'center'}},'איפה פוגשים את זה בעולם האמיתי?'),
+    el('p',{class:'section-sub',style:{marginInline:'auto',textAlign:'center'}},'אותו רעיון בדיוק — ניסוי, טעייה ופרס — מאחורי כל אלה:'),
+    el('div',{class:'why-strip',style:{marginTop:'18px'}}, apps.map(a=>el('div',{class:'why-card clay'},
+      el('div',{class:'ic',style:{background:'linear-gradient(145deg,'+a.c[0]+','+a.c[1]+')'}},svg(a.ic,{stroke:'#fff'})),
+      el('h4',{},a.h), el('p',{},a.p))))
+  ));
+
+  /* שאלות נפוצות */
+  root.appendChild(el('section',{class:'lesson clay'},
+    el('h3',{},'שאלות שאתם בטח שואלים'),
+    el('p',{style:{color:'var(--muted)'}},'לחצו על כרטיס לתשובה:'),
+    el('div',{class:'quiz-grid'},
+      [['האם המחשב באמת "מבין"?','לא ממש. הוא רק מחפש מה מביא הכי הרבה נקודות. אין לו הבנה או כוונה כמו לנו — רק חשבון.'],
+       ['כמה זמן לוקח לו ללמוד?','תלוי במשימה: לפעמים אלפי ניסיונות, לפעמים מיליונים. במשחקים שכאן — שניות בלבד.'],
+       ['במה זה שונה מתכנות רגיל?','בתכנות רגיל כותבים את החוקים מראש. כאן המחשב מגלה את החוקים בעצמו, מתוך ניסיון.'],
+       ['זה כמו המוח שלנו?','יש דמיון ברעיון (גם אנחנו לומדים מתגמול ועונש), אבל המוח האנושי מורכב פי אלף.']
+      ].map(([q,a])=>{ const card=el('button',{class:'flip',type:'button','aria-label':q}, el('div',{class:'flip-inner'},
+          el('div',{class:'flip-face flip-front'}, el('div',{class:'q'},q), el('div',{class:'hint'},'לחצו לתשובה')),
+          el('div',{class:'flip-face flip-back'}, el('div',{},a), el('div',{class:'hint'},'לחצו שוב'))));
+        card.addEventListener('click',()=>card.classList.toggle('flipped')); return card;})
+    )
+  ));
+
+  /* טיפים ללמידה קלה */
+  root.appendChild(el('section',{class:'lesson clay'},
+    el('h3',{},'איך ללמוד את זה בקלות — כמה טיפים'),
+    callout('tip',ICON.joystick,'קודם כל, לשחק:',P('עברו לעמוד המשחקים, לחצו "אמן" וצפו. לראות מחשב לומד מול העיניים שווה יותר מאלף הסברים.')),
+    callout('when',ICON.spark,'שחקו עם הסליידר ε:',P('הזיזו אותו לקצוות: ב-1.0 המחשב מנחש בלי הפסקה (ולא מתקדם), וב-0 הוא נדבק רק למה שכבר יודע. ככה ממש מרגישים מה זה חקירה מול ניצול.')),
+    callout('warn',ICON.brain,'אל תמהרו לנוסחאות:',P('כל הרעיון הוא "נסה ← קבל פרס ← תזכור ← חזור". אם הבנתם את זה — הבנתם את הלב של RL. כל השאר זה פרטים טכניים.'))
+  ));
+
+  /* מילון נפתח */
+  const gloss=el('div',{class:'glossary clay open',style:{marginTop:'8px'}});
+  const head=el('button',{class:'gloss-head',type:'button','aria-expanded':'true'},
+    el('h3',{style:{margin:0}},'מילון מונחים ',el('span',{class:'en',style:{color:'var(--indigo)'}},'· Glossary')),
+    el('span',{class:'gloss-toggle'},svg(ICON.chevron,{stroke:'#4F46E5'})));
+  const list=el('div',{class:'gloss-list'});
+  GLOSS.forEach(g=>list.appendChild(el('div',{class:'gloss-item'}, el('div',{class:'t'}, el('span',{},g.en), el('span',{class:'he'},g.he)), el('p',{},g.d))));
+  head.addEventListener('click',()=>{const o=gloss.classList.toggle('open');head.setAttribute('aria-expanded',String(o));});
+  gloss.appendChild(head); gloss.appendChild(el('div',{class:'gloss-body'}, el('div',{class:'gloss-inner'}, list)));
+  root.appendChild(gloss);
+
+  /* CTA */
+  root.appendChild(el('section',{class:'section'}, el('div',{class:'cta-band'},
+    el('h2',{},'עכשיו הכי כיף — לראות את זה קורה'),
+    el('p',{class:'section-sub',style:{marginInline:'auto',marginBottom:'20px'}},'עברו למשחקים וצפו במחשב לומד לבד, עם הסבר בכל שלב.'),
+    el('button',{class:'btn green',dataset:{route:'play'}},svg(ICON.joystick,{stroke:'#fff'}),'קחו אותי למשחקים')
+  )));
+
+  /* תג "סקרן" כשמגיעים לסוף */
+  const sent=el('div',{style:{height:'1px'}}); root.appendChild(sent);
+  if('IntersectionObserver' in window){ const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){unlock('curious');io.disconnect();}});}); io.observe(sent); }
+  else unlock('curious');
+}
+register('learn', renderLearn);
+})();
+</script>
+<script id="page-play">
+/* =====================================================================
+   עמוד 3 — משחקי למידה (גרסה 3)
+   חדש: בתופסת הבוטים משנים את המפה בזמן אמת — בורחים בונים מכשולים,
+        תופסים לומדים לשבור אותם. + הסברים מפורטים על "חשיבת" הבוטים.
+   ===================================================================== */
+(function(){
+const A=window.__RL, {el,svg,ICON,go,$,$$,register,unlock,markDone,toast,confetti,clamp,lerp,rnd,randInt,fmt,BADGES,state,prefersReduced}=A;
+const DPR=Math.min(window.devicePixelRatio||1,2);
+
+/* ---------- כלי-עזר ל-UI ---------- */
+function mkSlider(label,min,max,step,val,fmtFn,onInput){
+  const valEl=el('span',{class:'val'},fmtFn?fmtFn(val):String(val));
+  const input=el('input',{type:'range',min,max,step,value:val,'aria-label':label});
+  input.addEventListener('input',()=>{const v=+input.value;valEl.textContent=fmtFn?fmtFn(v):String(v);onInput&&onInput(v);});
+  return {wrap:el('div',{class:'slider'},el('label',{},el('span',{},label),valEl),input),input,set:v=>{input.value=v;valEl.textContent=fmtFn?fmtFn(+v):String(v);},get:()=>+input.value};
+}
+function tbtn(icon,label,cls,on){ return el('button',{class:'btn '+(cls||'ghost')+' sm',type:'button',onClick:on}, svg(icon), label); }
+function tryBox(...kids){ return el('div',{class:'try'}, el('div',{class:'ic'},svg(ICON.bolt,{stroke:'#7A4E00',fill:'#7A4E00'})), el('p',{},...kids)); }
+function leg(col,txt){ return el('span',{}, el('i',{style:{background:col}}), txt); }
+function labShell(icon,colors,title,en,desc){
+  const head=el('div',{class:'lab-head'},
+    el('div',{class:'badge-ic',style:{background:'linear-gradient(145deg,'+colors[0]+','+colors[1]+')'}},svg(icon,{stroke:'#fff'})),
+    el('div',{}, el('h3',{},title), el('div',{style:{color:'var(--indigo)',fontWeight:700,fontSize:'.85rem',direction:'ltr',textAlign:'right'}},en)));
+  return el('section',{class:'lab clay'}, head, el('p',{class:'lab-desc'},desc));
+}
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function MiniCurve(color){ const cv=el('canvas',{class:'sim',width:260*DPR,height:64*DPR,style:{width:'100%'}}); const ctx=cv.getContext('2d');
+  return {cv, draw(data){ if(!cv.isConnected)return; const w=260,h=64; ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,w,h); ctx.fillStyle='#F8FAFF'; rr(ctx,0,0,w,h,8); ctx.fill();
+    if(!data||data.length<2){ctx.fillStyle='#94A3B8';ctx.font='11px Rubik';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('עדיין אין נתונים',w/2,h/2);return;}
+    const pad=6,X=i=>pad+i/(data.length-1)*(w-2*pad),Y=v=>h-pad-clamp(v,0,1)*(h-2*pad);
+    ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.beginPath();data.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();
+  }};
+}
+function Narrative(){
+  const badge=el('span',{class:'phase-badge'}), text=el('p',{class:'ntext'});
+  const phs=[0,1,2,3].map(()=>el('div',{class:'ph'}));
+  const track=el('div',{class:'phase-track'},phs);
+  const root=el('div',{class:'narrative'}, el('div',{},badge), text, track);
+  return { root, set(idx,color,label,msg){ badge.style.background='linear-gradient(145deg,'+color+',#0006)'; badge.textContent=label; text.textContent=msg; phs.forEach((p,i)=>p.classList.toggle('on',i<=idx)); } };
+}
+function Thoughts(rows){ /* rows: [{color,label}] */
+  const items=rows.map(r=>{ const dot=el('span',{class:'dot',style:{background:r.color}}), t=el('span',{class:'t'},'…'), m=el('span',{class:'mode'},''); return {row:el('div',{class:'thought'},dot,t,m),t,m}; });
+  return { root:el('div',{class:'thoughts'}, items.map(i=>i.row)), set(i,html,ex){ items[i].t.innerHTML=html; items[i].m.textContent=ex?'חקירה':'ניצול'; items[i].m.className='mode '+(ex?'explore':'exploit'); } };
+}
+function qhelpers(){ return {
+  mQ:(Q,s,NA)=>{let m=-1e9;for(let i=0;i<NA;i++)m=Math.max(m,Q[s*NA+i]);return m;},
+  amax:(Q,s,NA)=>{let bv=-1e9,t=[];for(let i=0;i<NA;i++){const v=Q[s*NA+i];if(v>bv+1e-9){bv=v;t=[i];}else if(Math.abs(v-bv)<1e-9)t.push(i);}return t[randInt(t.length)];}
+};}
+/* מילים לכיוונים — להפיכת מצב/פעולה למשפט בעברית */
+function posWords(dr,dc){ const v=dr<0?'למעלה':dr>0?'למטה':''; const h=dc<0?'משמאל':dc>0?'מימין':''; if(h&&v)return h+' ו'+v; return h||v||'ממש לידו'; }
+function moveWords(dr,dc){ const p=[]; if(dr<0)p.push('למעלה');else if(dr>0)p.push('למטה'); if(dc>0)p.push('ימינה');else if(dc<0)p.push('שמאלה'); return p.join(' ')||'במקום'; }
+
+/* =====================================================================
+   משחק 1 — תופסת: בורחים בונים מכשולים, תופסים שוברים אותם
+   ===================================================================== */
+function PursuitGame(){
+  const GS=9, CELL=46, W=GS*CELL, H=GS*CELL, NAC=5, NAR=6, NSR=800, NSC=400;
+  const ACT=[[-1,0],[0,1],[1,0],[0,-1]];
+  const PLAN=60, CHASE=210, NOBST=18;   /* זמני התכנון והסיבוב (בצעדים) — סיבוב ארוך כדי שהקרב "יחזיק" */
+  const QH=qhelpers();
+  let Qc,Qr,catchers,runners,walls,locked,episode,phase,ptimer,ctimer,flashes,lockN,sabN;
+  let sHist,cHist,survSkill,catchSkill;
+  let eps=0.03,alpha=0.5,gamma=0.92,sps=7,playing=false,raf=0,last=0,acc=0,uiAcc=0,editMode=false,freeze=0,fx=null;
+  let cv,ctx,nar,thoughts,sBar,cBar,sMet,cMet,sCv,cCv,epEl,tLabel,tSecs,tBar,timerEl,levelEl,lvlTxt;
+
+  const key=(r,c)=>r*GS+c;
+  const inb=(r,c)=>r>=0&&r<GS&&c>=0&&c<GS;
+  const isWall=(r,c)=>walls.has(key(r,c));
+  const isLocked=(r,c)=>locked.has(key(r,c));
+  const free=(r,c)=>inb(r,c)&&!isWall(r,c);
+  const occupied=(r,c)=>catchers.some(a=>a.tr===r&&a.tc===c)||runners.some(a=>!a.caught&&a.tr===r&&a.tc===c);
+  const bucket=v=> v<=-3?0:v<0?1:v===0?2:v<3?3:4;
+  function blockedBits(r,c){ let b=0; for(let k=0;k<4;k++){ if(!free(r+ACT[k][0],c+ACT[k][1])) b|=(1<<k); } return b; }
+  function stateR(self,cat,ph){ return ((bucket(cat.c-self.c)*5+bucket(cat.r-self.r))*16+blockedBits(self.r,self.c))*2+ph; }
+  function stateC(self,run){ return (bucket(run.c-self.c)*5+bucket(run.r-self.r))*16+blockedBits(self.r,self.c); }
+  function curEps(){ return Math.max(eps, 0.6*Math.pow(0.90,episode)); }
+  function pickR(s){ return Math.random()<curEps()?{a:randInt(NAR),ex:true}:{a:QH.amax(Qr,s,NAR),ex:false}; }
+  function pickC(s){ return Math.random()<curEps()?{a:randInt(NAC),ex:true}:{a:QH.amax(Qc,s,NAC),ex:false}; }
+  function learnR(s,a,r,ns,done){const i=s*NAR+a;Qr[i]+=alpha*(r+(done?0:gamma*QH.mQ(Qr,ns,NAR))-Qr[i]);}
+  function learnC(s,a,r,ns,done){const i=s*NAC+a;Qc[i]+=alpha*(r+(done?0:gamma*QH.mQ(Qc,ns,NAC))-Qc[i]);}
+  function bfs(sr,sc){ const dist=new Int16Array(GS*GS); dist.fill(-1); if(!free(sr,sc))return dist; dist[key(sr,sc)]=0; const q=[[sr,sc]]; let h=0;
+    while(h<q.length){const cur=q[h++],d=dist[key(cur[0],cur[1])]; for(const m of ACT){const nr=cur[0]+m[0],nc=cur[1]+m[1]; if(free(nr,nc)&&dist[key(nr,nc)]<0){dist[key(nr,nc)]=d+1;q.push([nr,nc]);}}} return dist; }
+  const pd=(map,r,c)=>{const v=map[key(r,c)];return v<0?55:v;};
+  const reachable=(map,r,c)=>map[key(r,c)]>=0;
+
+  function mkC(r,c){return {r,c,tr:r,tc:c,px:c,py:r,ppr:r,ppc:c,ex:false,dir:2,tgt:0,info:null,why:''};}
+  function mkR(r,c){return {r,c,tr:r,tc:c,px:c,py:r,ppr:r,ppc:c,ex:false,dir:0,caught:false,alive:0,why:'',info:null,_barr:false,_locked:0};}
+  function spawn(){
+    walls=new Set(); locked=new Set();
+    catchers=[mkC(0,0),mkC(0,GS-1)];
+    runners=[mkR(GS-1,0),mkR(GS-1,GS-1)];
+    let placed=0,g=0;
+    while(placed<NOBST&&g++<600){ const r=randInt(GS),c=randInt(GS); if(!occupied(r,c)&&!walls.has(key(r,c))){ walls.add(key(r,c)); placed++; } }
+    phase='plan'; ptimer=PLAN; ctimer=CHASE; flashes=[];
+  }
+  function resetAll(){ Qc=new Float64Array(NSC*NAC); Qr=new Float64Array(NSR*NAR); episode=0; sHist=[];cHist=[]; survSkill=0;catchSkill=0; freeze=0;fx=null; lockN=0;sabN=0; spawn(); }
+
+  /* בורח · פעולה 4: לגרור מכשול קרוב לחסימה בין עצמו לתופס */
+  function doBarricade(pos,ti){ const cat=catchers[ti]; const bdir=dirToward(pos,{r:cat.tr,c:cat.tc}); const br=pos.r+ACT[bdir][0],bc=pos.c+ACT[bdir][1];
+    if(!inb(br,bc)||isWall(br,bc)||occupied(br,bc)) return false;
+    let best=-1,bd=1e9; walls.forEach(k=>{ const wr=Math.floor(k/GS),wc=k%GS, dp=Math.abs(wr-pos.r)+Math.abs(wc-pos.c); if(dp>0&&dp<=2){ const d=Math.abs(wr-br)+Math.abs(wc-bc); if(d<bd){bd=d;best=k;} } });
+    if(best<0) return false; const wasLocked=locked.has(best); walls.delete(best); locked.delete(best); const nk=key(br,bc); walls.add(nk); if(wasLocked)locked.add(nk); return true; }
+  /* בורח · פעולה 5: לנעול את המכשולים הסמוכים — כך התופסים לא יוכלו לחבל בהם */
+  function doLock(pos){ let n=0; for(const m of ACT){ const ar=pos.r+m[0],ac=pos.c+m[1],k=key(ar,ac); if(isWall(ar,ac)&&!locked.has(k)){ locked.add(k); n++; } } return n; }
+  /* תופס · פעולה 4: לחבל — להזיז הצידה מכשול לא-נעול שחוסם את הדרך אל הבורח */
+  function doSabotage(pos,ti){ const run=runners[ti]; if(!run) return false; const sdir=dirToward(pos,{r:run.tr,c:run.tc}); const sr=pos.r+ACT[sdir][0],sc=pos.c+ACT[sdir][1],k=key(sr,sc);
+    if(!isWall(sr,sc)||locked.has(k)) return false;
+    const perp = sdir%2===0?[[0,1],[0,-1]]:[[1,0],[-1,0]];
+    for(const m of perp){ const tr=sr+m[0],tc=sc+m[1]; if(inb(tr,tc)&&!isWall(tr,tc)&&!occupied(tr,tc)){ walls.delete(k); walls.add(key(tr,tc)); return true; } }
+    walls.delete(k); return true; }
+  function catcherMove(p,dir){ const nr=p.r+ACT[dir][0],nc=p.c+ACT[dir][1]; return free(nr,nc)?{r:nr,c:nc}:{r:p.r,c:p.c}; }
+  function towardStep(from,to){ let best=from,bd=Math.abs(from.r-to.r)+Math.abs(from.c-to.c); for(const m of ACT){const nr=from.r+m[0],nc=from.c+m[1]; if(free(nr,nc)){const d=Math.abs(nr-to.r)+Math.abs(nc-to.c); if(d<bd){bd=d;best={r:nr,c:nc};}}} return best; }
+  function dirToward(from,to){ const dr=to.r-from.r,dc=to.c-from.c; if(Math.abs(dc)>=Math.abs(dr)) return dc>=0?1:3; return dr>=0?2:0; }
+
+  function logicStep(live){
+    const active = phase==='chase';
+    const cs=catchers.map(c=>({r:c.tr,c:c.tc})), rs=runners.map(r=>({r:r.tr,c:r.tc}));
+    const bcPre=cs.map(p=>bfs(p.r,p.c)), brPre=rs.map(p=>bfs(p.r,p.c));
+    const ph=active?1:0;
+    /* החלטות הבורחים */
+    const ri=runners.map((r,i)=>{ if(r.caught)return null; let bi=0,bd=1e9; cs.forEach((cp,j)=>{const d=pd(bcPre[j],rs[i].r,rs[i].c);if(d<bd){bd=d;bi=j;}});
+      const s=stateR(rs[i],cs[bi],ph); const pk=pickR(s); r.ex=pk.ex; r.info={dr:cs[bi].r-rs[i].r,dc:cs[bi].c-rs[i].c,a:pk.a}; return {s,a:pk.a,ti:bi,safeOld:bd}; });
+    const rN=runners.map((r,i)=>{ if(r.caught)return {r:r.tr,c:r.tc}; const a=ri[i].a; r._barr=false; r._locked=0;
+      if(a===4){ r._barr=doBarricade(rs[i],ri[i].ti); return {r:rs[i].r,c:rs[i].c}; }
+      if(a===5){ r._locked=doLock(rs[i]); if(r._locked>0)lockN++; return {r:rs[i].r,c:rs[i].c}; }
+      const nr=rs[i].r+ACT[a][0],nc=rs[i].c+ACT[a][1]; if(free(nr,nc)){ r.dir=a; return {r:nr,c:nc}; } return {r:rs[i].r,c:rs[i].c}; });
+    /* החלטות התופסים (רק בסיבוב) */
+    let ci=null, cN;
+    if(active){
+      ci=catchers.map((c,i)=>{ let bi=-1,bd=1e9; runners.forEach((rr,j)=>{ if(rr.caught)return; const d=Math.abs(cs[i].r-rs[j].r)+Math.abs(cs[i].c-rs[j].c); if(d<bd){bd=d;bi=j;} }); if(bi<0)bi=0; c.tgt=bi;
+        const s=stateC(cs[i],rs[bi]); const pk=pickC(s); c.ex=pk.ex; c.info={dr:rs[bi].r-cs[i].r,dc:rs[bi].c-cs[i].c,a:pk.a}; return {s,a:pk.a,ti:bi}; });
+      cN=catchers.map((c,i)=>{ c._sab=false; if(ci[i].a===4){ c._sab=doSabotage(cs[i],ci[i].ti); if(c._sab){sabN++; flashes.push({x:(cs[i].c+0.5)*CELL,y:(cs[i].r+0.5)*CELL,t:0,sab:true});} return {r:cs[i].r,c:cs[i].c}; } return catcherMove(cs[i],ci[i].a); });
+      catchers.forEach((c,i)=>{ if(ci[i].a<4 && Math.random()<0.4){ const tg=rN[ci[i].ti]||rs[ci[i].ti]; if(Math.max(Math.abs(cN[i].r-tg.r),Math.abs(cN[i].c-tg.c))>1) cN[i]=towardStep(cN[i],tg); } if(cN[i].r!==c.tr||cN[i].c!==c.tc)c.dir=ci[i].a; });
+    } else { cN=cs.map(p=>({r:p.r,c:p.c})); }
+    catchers.forEach((c,i)=>{c.tr=cN[i].r;c.tc=cN[i].c;});
+    runners.forEach((r,i)=>{ if(!r.caught){r.tr=rN[i].r;r.tc=rN[i].c;} });
+    const newCaught=[];
+    if(active) runners.forEach((r,i)=>{ if(r.caught)return; const cb=blockedBits(r.tr,r.tc),cv2=(cb&1)+((cb>>1)&1)+((cb>>2)&1)+((cb>>3)&1); if(cv2>=3)return; /* מוגן בתוך מסתור (3 צדדים חסומים) — אי אפשר לתפוס */ for(const c of catchers){ if(Math.abs(c.tr-r.tr)+Math.abs(c.tc-r.tc)<=1){ r.caught=true; newCaught.push(i); flashes.push({x:(r.tc+0.5)*CELL,y:(r.tr+0.5)*CELL,t:0}); break; } } });
+    const bcPost=cs.map(p=>bfs(p.r,p.c)), brPost=rs.map(p=>bfs(p.r,p.c));
+    /* פרסים — בורחים */
+    runners.forEach((r,i)=>{ if(ri[i]===null)return; const safeNew=pd(bcPost[ri[i].ti],r.tr,r.tc), hidden=!reachable(bcPost[ri[i].ti],r.tr,r.tc);
+      const cb=blockedBits(r.tr,r.tc), cn=(cb&1)+((cb>>1)&1)+((cb>>2)&1)+((cb>>3)&1);
+      let rew=0.1*(safeNew-ri[i].safeOld)+0.18*cn; if(hidden)rew+=0.6; if(active)rew+=0.05;
+      if(ri[i].a===4){ if(r._barr)rew+=0.08; else rew-=0.06; }
+      if(ri[i].a===5){ if(r._locked>0)rew+=0.14*Math.min(r._locked,2); else rew-=0.05; }
+      r.why = hidden?'מוסתר! התופס לא מגיע' : (r._barr?'הזיז מכשול לחסימה' : (r._locked>0?'נעל את המסתור':(ri[i].a===4?'ניסה להזיז מכשול':(ri[i].a===5?'ניסה לנעול':(safeNew>ri[i].safeOld?'הגדיל מרחק':(active?'בסכנה':'מתכנן'))))));
+      let done=false; if(newCaught.indexOf(i)>=0){rew-=1;done=true;r.why='נתפס! (−1)';}
+      const ns=stateR({r:r.tr,c:r.tc},{r:catchers[ri[i].ti].tr,c:catchers[ri[i].ti].tc},ph); learnR(ri[i].s,ri[i].a,rew,ns,done); });
+    /* פרסים — תופסים */
+    if(active) catchers.forEach((c,i)=>{ const od=pd(brPre[ci[i].ti],cs[i].r,cs[i].c), dNew=pd(brPost[ci[i].ti],c.tr,c.tc);
+      let rew=0.3*(od-dNew)-0.02; const got=newCaught.indexOf(ci[i].ti)>=0 && Math.max(Math.abs(c.tr-runners[ci[i].ti].tr),Math.abs(c.tc-runners[ci[i].ti].tc))<=1; if(got)rew+=1;
+      if(ci[i].a===4){ if(c._sab)rew+=0.1; else rew-=0.06; }
+      c.why=got?'תפס!':(c._sab?'חיבל במסתור!':(ci[i].a===4?'ניסה לחבל (נעול)':(dNew<od?'מתקרב':'מחפש פתח')));
+      const ns=stateC({r:c.tr,c:c.tc},{r:runners[ci[i].ti].tr,c:runners[ci[i].ti].tc}); learnC(ci[i].s,ci[i].a,rew,ns,false); });
+    if(active){ runners.forEach(r=>{if(!r.caught)r.alive++;}); ctimer--; if(ctimer<=0||runners.every(r=>r.caught)) endRound(live); }
+    else { ptimer--; if(ptimer<=0){ phase='chase'; ctimer=CHASE; } }
+  }
+  function recordRound(){ const sf=runners.reduce((a,r)=>a+Math.min(r.alive,CHASE),0)/(runners.length*CHASE);
+    survSkill=survSkill*0.9+sf*0.1; catchSkill=catchSkill*0.9+(1-sf)*0.1; sHist.push(survSkill);cHist.push(catchSkill); if(sHist.length>160){sHist.shift();cHist.shift();}
+    episode++; if(survSkill>0.55)unlock('runners_pro'); if(catchSkill>0.5)unlock('catchers_pro'); }
+  function doReset(){ fx=null; spawn(); }
+  function endRound(live){ recordRound(); const survived=runners.some(r=>!r.caught);
+    if(live){ fx={survived:survived, t:0}; freeze=60; } else doReset(); }
+  function trainFast(n){ unlock('watcher'); freeze=0;fx=null; const t=episode+n; let g=0; while(episode<t&&g<n*(PLAN+CHASE+5)){logicStep(false);g++;} updateUI(); }
+
+  function phaseIdx(){ if(survSkill>0.6)return 3; if(survSkill>0.4)return 2; if(survSkill>0.2)return 1; return 0; }
+  const PH=[
+    {c:'#6366F1',l:'שלב 1 · בורחים תמימים',m:'הבורחים עדיין לא יודעים שאפשר להזיז מכשולים. הם פשוט נמלטים — ונתפסים מהר. זיכרון ריק = התנהגות "טיפשה".'},
+    {c:'#06B6D4',l:'שלב 2 · גילוי המכשולים',m:'הבורחים מגלים שדחיפת מכשול חוסמת את התופס — והתופסים מגלים שאפשר לחבל ולהזיז את המכשול הצידה כדי לעקוף.'},
+    {c:'#22C55E',l:'שלב 3 · בונים ונועלים מסתור',m:'בזמן התכנון הבורחים בונים מסתור — וגם נועלים אותו, כך שהתופסים לא יכולים לחבל בו. הם שורדים יותר ויותר.'},
+    {c:'#A855F7',l:'שלב 4 · קרב מכשולים מקצועי',m:'הבורחים נועלים מסתור משוריין; התופסים מנסים לחבל אך נכשלים מול הנעילה. שני הצדדים מנהלים קרב אובייקטים מתוחכם — בוטים שהפכו לאסטרטגים.'},
+  ];
+  function rThought(r){ if(!r||!r.info)return 'בורח חושב…'; const sees='רואה תופס '+posWords(r.info.dr,r.info.dc);
+    const act=r.info.a===4?'בחר להזיז מכשול':(r.info.a===5?'בחר לנעול מסתור':('בחר ללכת '+moveWords(ACT[r.info.a][0],ACT[r.info.a][1])));
+    return '<b>בורח</b> '+sees+' ← '+act+(r.why?' <span style="color:#64748B">· '+r.why+'</span>':''); }
+  function cThought(c){ if(phase==='plan')return '<b>תופס</b> ממתין לסיום זמן התכנון…'; if(!c||!c.info)return 'תופס חושב…';
+    const act=c.info.a===4?'בחר לחבל במסתור':('בחר ללכת '+moveWords(ACT[c.info.a][0],ACT[c.info.a][1]));
+    return '<b>תופס</b> רואה בורח '+posWords(c.info.dr,c.info.dc)+' ← '+act+(c.why?' <span style="color:#64748B">· '+c.why+'</span>':''); }
+  function updateTimer(){ const plan=phase==='plan',remain=plan?ptimer:ctimer,total=plan?PLAN:CHASE;
+    tLabel.textContent=plan?'זמן תכנון מסתור':'זמן הסיבוב'; tSecs.textContent=Math.max(0,Math.ceil(remain/Math.max(1,sps)))+' ש׳'; tBar.style.width=(100*Math.max(0,remain)/total)+'%'; timerEl.className='round-timer '+(plan?'plan':'chase'); }
+  function updateUI(){ const sp=Math.round(survSkill*100),cp=Math.round(catchSkill*100);
+    sBar.style.width=sp+'%'; cBar.style.width=cp+'%'; sMet.textContent=sp+'%'; cMet.textContent=cp+'%'; epEl.textContent=episode;
+    sCv.draw(sHist); cCv.draw(cHist); const i=phaseIdx(); nar.set(i,PH[i].c,PH[i].l,PH[i].m); updateTimer();
+    const lv = episode<15?['מתחיל · תנועה אקראית','#94A3B8'] : episode<45?['חובב · מתחיל להבין','#F59E0B'] : episode<120?['מתקדם · שולט בכללים','#3B82F6'] : ['מקצוען · אסטרטג מלא','#22C55E'];
+    lvlTxt.textContent=lv[0]; levelEl.style.background='linear-gradient(145deg,'+lv[1]+',#0007)';
+    const r0=runners.find(r=>!r.caught)||runners[0], c0=catchers[0];
+    thoughts.set(0, rThought(r0), r0&&r0.ex); thoughts.set(1, cThought(c0), c0&&c0.ex); }
+
+  function draw(){ if(!cv.isConnected)return; ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,W,H);
+    const plan=phase==='plan';
+    ctx.fillStyle=plan?'#EEF3FF':'#F4F6FF'; rr(ctx,0,0,W,H,16); ctx.fill();
+    ctx.strokeStyle='#E6EAF8'; ctx.lineWidth=1;
+    for(let i=1;i<GS;i++){ctx.beginPath();ctx.moveTo(i*CELL,0);ctx.lineTo(i*CELL,H);ctx.moveTo(0,i*CELL);ctx.lineTo(W,i*CELL);ctx.stroke();}
+    walls.forEach(k=>{ const r=Math.floor(k/GS),c=k%GS,lk=locked.has(k),x=c*CELL,y=r*CELL;
+      ctx.fillStyle=lk?'#B45309':'#475569'; rr(ctx,x+3,y+3,CELL-6,CELL-6,7); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.12)'; rr(ctx,x+5,y+5,CELL-10,8,4); ctx.fill();
+      ctx.strokeStyle=lk?'#78350F':'#1F2440';ctx.lineWidth=2;ctx.strokeRect(x+3,y+3,CELL-6,CELL-6);
+      if(lk){ const mx=x+CELL/2,my=y+CELL/2+2; ctx.strokeStyle='#FFE9C7';ctx.lineWidth=2.4; ctx.beginPath();ctx.arc(mx,my-3,4,Math.PI,0);ctx.stroke(); ctx.fillStyle='#FFE9C7'; rr(ctx,mx-5,my-1,10,8,2); ctx.fill(); } });
+    if(!plan){ ctx.save(); ctx.setLineDash([3,7]); ctx.lineWidth=2.5; ctx.lineCap='round'; ctx.strokeStyle='rgba(239,68,68,.28)';
+      catchers.forEach(c=>{ const r=runners[c.tgt]; if(!r||r.caught)return; ctx.beginPath();ctx.moveTo((c.px+0.5)*CELL,(c.py+0.5)*CELL);ctx.lineTo((r.px+0.5)*CELL,(r.py+0.5)*CELL);ctx.stroke(); }); ctx.restore();
+      const now=performance.now();
+      runners.forEach(r=>{ if(r.caught)return; const near=Math.min.apply(null,catchers.map(c=>Math.abs(c.tr-r.tr)+Math.abs(c.tc-r.tc))); if(near<=2){ const x=(r.px+0.5)*CELL,y=(r.py+0.5)*CELL,pulse=0.5+0.5*Math.sin(now*0.008); ctx.strokeStyle='rgba(245,158,11,'+(0.45+0.4*pulse)+')'; ctx.lineWidth=3; ctx.beginPath();ctx.arc(x,y,CELL*0.46+pulse*3,0,6.28);ctx.stroke(); } }); }
+    drawAg(runners,'#3B82F6','#1D4ED8'); drawAg(catchers,'#EF4444','#991B1B');
+    flashes.forEach(f=>{ const p=clamp(f.t/20,0,1),col=f.sab?'245,158,11':'34,197,94'; ctx.strokeStyle='rgba('+col+','+(1-p)+')'; ctx.lineWidth=4; ctx.beginPath();ctx.arc(f.x,f.y,6+p*CELL,0,6.28);ctx.stroke(); });
+    if(plan){ ctx.fillStyle='rgba(79,70,229,.92)'; ctx.font='700 12px Rubik'; ctx.textAlign='center'; ctx.fillText('שלב תכנון: הבורחים גוררים מכשולים ונועלים מסתור · התופסים קפואים',W/2,H-9); }
+    if(fx){ const p=clamp(fx.t/60,0,1); ctx.save(); ctx.globalAlpha=clamp(1-p*0.7,0,1); ctx.fillStyle=fx.survived?'rgba(34,197,94,.16)':'rgba(239,68,68,.14)'; rr(ctx,0,0,W,H,16); ctx.fill();
+      ctx.globalAlpha=clamp(1-p*0.6,0,1); ctx.fillStyle='#fff'; ctx.strokeStyle=fx.survived?'#16A34A':'#DC2626'; ctx.lineWidth=4; ctx.font='800 30px "Fredoka","Rubik",sans-serif'; ctx.textAlign='center';
+      const msg=fx.survived?'הבורחים שרדו!':'כל הבורחים נתפסו'; ctx.strokeText(msg,W/2,H/2); ctx.fillText(msg,W/2,H/2); ctx.restore(); }
+  }
+  function drawAg(list,fill,dark){ for(const a of list){ const x=(a.px+0.5)*CELL,y=(a.py+0.5)*CELL,rad=CELL*0.33;
+    ctx.fillStyle='rgba(31,36,64,.13)'; ctx.beginPath();ctx.ellipse(x,y+rad*0.95,rad*0.9,rad*0.4,0,0,6.28);ctx.fill();
+    ctx.beginPath();ctx.arc(x,y,rad,0,6.2832);ctx.fillStyle=a.caught?'#94A3B8':fill;ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#fff';ctx.stroke();
+    const d=ACT[a.dir||0], ox=d[1]*rad*0.26, oy=d[0]*rad*0.26;
+    if(a.caught){ ctx.strokeStyle=dark;ctx.lineWidth=2.6;ctx.lineCap='round'; const e=rad*0.15; [[-rad*0.32,-rad*0.08],[rad*0.32,-rad*0.08]].forEach(pp=>{ ctx.beginPath();ctx.moveTo(x+pp[0]-e,y+pp[1]-e);ctx.lineTo(x+pp[0]+e,y+pp[1]+e);ctx.moveTo(x+pp[0]+e,y+pp[1]-e);ctx.lineTo(x+pp[0]-e,y+pp[1]+e);ctx.stroke(); }); }
+    else { ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x-rad*0.32+ox,y-rad*0.1+oy,rad*0.2,0,6.28);ctx.arc(x+rad*0.32+ox,y-rad*0.1+oy,rad*0.2,0,6.28);ctx.fill();
+      ctx.fillStyle='#1F2440';ctx.beginPath();ctx.arc(x-rad*0.32+ox,y-rad*0.1+oy,rad*0.1,0,6.28);ctx.arc(x+rad*0.32+ox,y-rad*0.1+oy,rad*0.1,0,6.28);ctx.fill(); }
+  } }
+  function frame(t){ if(!cv.isConnected){playing=false;return;} if(!last)last=t; const dt=Math.min(0.05,(t-last)/1000);last=t;
+    flashes.forEach(f=>f.t++); if(flashes.length)flashes=flashes.filter(f=>f.t<20);
+    if(freeze>0){ if(fx)fx.t++; freeze--; catchers.concat(runners).forEach(a=>{a.px=a.tc;a.py=a.tr;}); if(freeze===0){ doReset(); updateUI(); } }
+    else if(playing&&!editMode){ acc+=dt*sps; let g=0;
+      while(acc>=1&&g<3&&freeze===0){ catchers.concat(runners).forEach(a=>{a.ppr=a.tr;a.ppc=a.tc;}); logicStep(true); acc-=1; g++; }
+      const fr=clamp(acc,0,1); catchers.concat(runners).forEach(a=>{ a.px=lerp(a.ppc,a.tc,fr); a.py=lerp(a.ppr,a.tr,fr); });
+      uiAcc+=dt; if(uiAcc>=0.1){uiAcc=0;updateUI();} }
+    else { catchers.concat(runners).forEach(a=>{a.px+=(a.tc-a.px)*Math.min(1,dt*12);a.py+=(a.tr-a.py)*Math.min(1,dt*12);}); }
+    draw(); raf=requestAnimationFrame(frame); }
+
+  const lab=labShell(ICON.target,['#EF4444','#B91C1C'],'משחק תופסת אסטרטגי','Tag · obstacle warfare: lock vs sabotage',
+    'קרב מכשולים דו-צדדי: בזמן התכנון הבורחים גוררים מכשולים ובונים מסתור — וגם נועלים אותו. בסיבוב התופסים מנסים לחבל ולהזיז מכשולים לא-נעולים כדי לפרוץ פנימה. עם האימון הבורחים לומדים לנעול בזמן, והקרב נמשך עד תום הזמן. עקבו אחרי עקומת ה"שרידוּת".');
+  cv=el('canvas',{class:'sim',width:W*DPR,height:H*DPR,style:{width:W+'px'}}); ctx=cv.getContext('2d');
+  tLabel=el('b',{},'זמן תכנון מסתור'); tSecs=el('span',{class:'secs'},''); tBar=el('i',{style:{width:'100%'}});
+  timerEl=el('div',{class:'round-timer plan'}, svg(ICON.clock,{stroke:'#4F46E5'}), tLabel, tSecs, el('span',{class:'bar'},tBar));
+  lvlTxt=el('b',{},'מתחיל'); levelEl=el('div',{class:'level-badge',style:{background:'linear-gradient(145deg,#94A3B8,#0006)'}}, svg(ICON.brain,{stroke:'#fff'}), el('span',{},'רמת הבוטים: '), lvlTxt);
+  sMet=el('div',{class:'metric'},'0%'); sBar=el('i',{style:{width:'0%',background:'linear-gradient(90deg,#3B82F6,#60A5FA)'}}); sCv=MiniCurve('#3B82F6');
+  cMet=el('div',{class:'metric'},'0%'); cBar=el('i',{style:{width:'0%',background:'linear-gradient(90deg,#EF4444,#F87171)'}}); cCv=MiniCurve('#EF4444');
+  const teams=el('div',{class:'teams'},
+    el('div',{class:'team-panel'}, el('h5',{}, el('span',{class:'dot',style:{background:'#3B82F6'}}),'הבורחים'), sMet, el('div',{class:'ml'},'שרידוּת (שרדו את הסיבוב)'), el('div',{class:'skill-bar'},sBar), sCv.cv),
+    el('div',{class:'team-panel'}, el('h5',{}, el('span',{class:'dot',style:{background:'#EF4444'}}),'התופסים'), cMet, el('div',{class:'ml'},'תפיסה בזמן'), el('div',{class:'skill-bar'},cBar), cCv.cv));
+  nar=Narrative(); thoughts=Thoughts([{color:'#3B82F6'},{color:'#EF4444'}]); epEl=el('div',{class:'v'},'0');
+  let playBtn; function setPlaying(p){ playing=p;if(p)unlock('watcher');playBtn.replaceChildren(svg(p?ICON.pause:ICON.play),p?'עצור':'הפעלה');}
+  playBtn=el('button',{class:'btn green sm',type:'button',onClick:()=>setPlaying(!playing)},svg(ICON.play),'הפעלה');
+  const spS=mkSlider('מהירות',2,30,1,sps,v=>v+'×',v=>sps=v);
+  lab.appendChild(el('div',{class:'lab-stage two'},
+    el('div',{class:'canvas-box'}, levelEl, timerEl, cv, el('div',{class:'legend'}, leg('#3B82F6','בורחים'), leg('#EF4444','תופסים'), leg('#475569','מכשול נייד'), leg('#B45309','מכשול נעול'))),
+    el('div',{}, nar.root, thoughts.root, teams)));
+  lab.appendChild(el('div',{class:'sliders'}, spS.wrap));
+  lab.appendChild(el('div',{class:'controls'}, playBtn,
+    tbtn(ICON.step,'צעד',null,()=>{ if(freeze>0){freeze=0;doReset();} else logicStep(true); updateUI(); }),
+    tbtn(ICON.bolt,'⚡ אמן 150 סיבובים','amber',()=>{setPlaying(false);trainFast(150);}),
+    tbtn(ICON.reset,'איפוס','pink',()=>{setPlaying(false);resetAll();updateUI();}),
+    el('div',{class:'stat',style:{marginInlineStart:'auto'}}, epEl, el('div',{class:'l'},'סיבובים')) ));
+  lab.appendChild(tryBox(el('b',{},'להדגמה מהירה: '),'הפעילו (Play) וראו את הבורחים ',el('b',{},'מגושמים'),'. ואז לחצו ',el('b',{},'⚡ אמן'),' פעם אחת — הם הופכים לאסטרטגים: בזמן התכנון גוררים מכשולים, ',el('b',{},'נועלים את המסתור'),' (מכשול כתום-נעול), והתופסים מנסים לחבל אך נכשלים מול הנעילה. כך הסיבוב נמשך עד הסוף.'));
+  resetAll(); updateUI(); draw(); raf=requestAnimationFrame(frame);
+  return lab;
+}
+
+/* =====================================================================
+   משחק 2 — כדורגל בסגנון HaxBall (פיזיקה רציפה) + הסבר חשיבה
+   ===================================================================== */
+function SoccerGame(){
+  const W=480,H=300,GOAL=104,gT=(H-GOAL)/2,gB=(H+GOAL)/2;
+  const PR=13,BR=8,ACCEL=0.55,PDAMP=0.86,BDAMP=0.985,E=0.72,KICK=2.4,MAXT=560,PLAYMAX=1600,HOLD=6,NA=8,NSTATE=128;
+  const DIRS=[]; for(let k=0;k<8;k++)DIRS.push([Math.cos(k*Math.PI/4),Math.sin(k*Math.PI/4)]);
+  const QH=qhelpers();
+  let QA,QB,players,ball,episode,scoreA,scoreB,skA,skB,aHist,bHist,tick,progA,progB;
+  let eps=0.03,alpha=0.5,gamma=0.92,sps=2,playing=false,raf=0,uiAcc=0,freeze=0,goalFx=null;
+  let cv,ctx,nar,thoughts,aMet,bMet,aBar,bBar,curveA,curveB,tSecsS,tBarS,timerElS,levelElS,lvlTxtS;
+  const teamQ=t=>t==='A'?QA:QB;
+
+  const sector=(dx,dy)=>{ let a=Math.atan2(dy,dx); a=(a+Math.PI*2)%(Math.PI*2); return Math.floor(a/(Math.PI/4))%8; };
+  function stateOf(p){ const goal=p.team==='A'?{x:W,y:H/2}:{x:0,y:H/2};
+    const sB=sector(ball.x-p.x,ball.y-p.y), sG=sector(goal.x-ball.x,goal.y-ball.y);
+    const near=Math.hypot(ball.x-p.x,ball.y-p.y)<(PR+BR+10)?1:0; return (sB*8+sG)*2+near; }
+  function curEps(){ return Math.max(eps, 0.6*Math.pow(0.90,episode)); }   /* דעיכת חקירה: ריצה אקראית בהתחלה → תוך ~50 פרקים תנועה חדה ומחושבת */
+  function pick(Q,s){ return Math.random()<curEps()?{a:randInt(NA),ex:true}:{a:QH.amax(Q,s,NA),ex:false}; }
+  function learn(Q,s,a,r,ns,done){const i=s*NA+a;Q[i]+=alpha*(r+(done?0:gamma*QH.mQ(Q,ns,NA))-Q[i]);}
+  function mkP(x,y,team){return {x,y,vx:0,vy:0,team,act:0,hold:0,sd:0,acc:0,ex:false,_pd:null,info:null,why:''};}
+  function kickoff(){ players=[mkP(W*0.30,H/2-46,'A'),mkP(W*0.30,H/2+46,'A'),mkP(W*0.70,H/2-46,'B'),mkP(W*0.70,H/2+46,'B')]; ball={x:W/2,y:H/2,vx:rnd(-1,1),vy:rnd(-1,1)}; }
+  function resetAll(){ QA=new Float64Array(NSTATE*NA); QB=new Float64Array(NSTATE*NA); episode=0;scoreA=0;scoreB=0;skA=0;skB=0;aHist=[];bHist=[];tick=0;progA=0;progB=0; kickoff(); }
+  function clampPlayer(p){ if(p.x<PR){p.x=PR;p.vx*=-0.3;} if(p.x>W-PR){p.x=W-PR;p.vx*=-0.3;} if(p.y<PR){p.y=PR;p.vy*=-0.3;} if(p.y>H-PR){p.y=H-PR;p.vy*=-0.3;} }
+  function ballWalls(){ let s=null;
+    if(ball.y<BR){ball.y=BR;ball.vy*=-E;} if(ball.y>H-BR){ball.y=H-BR;ball.vy*=-E;}
+    if(ball.x<BR){ if(ball.y>gT&&ball.y<gB)s='B'; else {ball.x=BR;ball.vx*=-E;} }
+    if(ball.x>W-BR){ if(ball.y>gT&&ball.y<gB)s='A'; else {ball.x=W-BR;ball.vx*=-E;} }
+    return s; }
+  function playerBall(p){ const dx=ball.x-p.x,dy=ball.y-p.y; let d=Math.hypot(dx,dy); const min=PR+BR;
+    if(d<min){ if(d<.01)d=.01; const nx=dx/d,ny=dy/d; ball.x=p.x+nx*min; ball.y=p.y+ny*min; const pv=p.vx*nx+p.vy*ny; const add=Math.max(0,pv)+KICK; ball.vx=ball.vx*0.25+nx*add; ball.vy=ball.vy*0.25+ny*add; p._kick=true; } }
+  function playerPlayer(a,b){ const dx=b.x-a.x,dy=b.y-a.y; let d=Math.hypot(dx,dy); const min=PR*2; if(d<min&&d>0){ const nx=dx/d,ny=dy/d,ov=(min-d)/2; a.x-=nx*ov;a.y-=ny*ov;b.x+=nx*ov;b.y+=ny*ov; const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny; if(rv<0){ const im=rv*0.5; a.vx+=nx*im;a.vy+=ny*im;b.vx-=nx*im;b.vy-=ny*im; } } }
+
+  function tickStep(live){
+    for(const p of players){ if(p.hold<=0){ p.sd=stateOf(p); const pk=pick(teamQ(p.team),p.sd); p.act=pk.a;p.ex=pk.ex;p.acc=0;p.hold=HOLD; p.info={bx:ball.x-p.x,by:ball.y-p.y,a:pk.a}; p.why=''; } p._kick=false; }
+    for(const p of players){ const d=DIRS[p.act]; p.vx+=d[0]*ACCEL; p.vy+=d[1]*ACCEL; }
+    const bx0=ball.x;
+    for(const p of players){ p.vx*=PDAMP;p.vy*=PDAMP; p.x+=p.vx;p.y+=p.vy; clampPlayer(p); }
+    ball.vx*=BDAMP;ball.vy*=BDAMP; ball.x+=ball.vx; ball.y+=ball.vy;
+    let scored=ballWalls();
+    for(const p of players) playerBall(p);
+    for(let i=0;i<players.length;i++)for(let j=i+1;j<players.length;j++)playerPlayer(players[i],players[j]);
+    const bdx=ball.x-bx0;
+    for(const p of players){ const dist=Math.hypot(ball.x-p.x,ball.y-p.y); let r=(p.team==='A'?bdx:-bdx)*0.05; if(p._pd!=null)r+=(p._pd-dist)*0.02; p._pd=dist; if(scored)r+=scored===p.team?1:-0.5; p.acc+=r;
+      if(scored)p.why=scored===p.team?'גול! (+1)':'ספגנו גול'; else if(p._kick)p.why=(p.team==='A'?bdx>0:bdx<0)?'בעט לכיוון השער':'נגע בכדור'; else if(p._pd!=null&&dist<p._pd+0.01&&!p.why)p.why=''; }
+    if(bdx>0.06)progA++; else if(bdx<-0.06)progB++;
+    tick++;
+    for(const p of players){ p.hold--; if(p.hold<=0) learn(teamQ(p.team),p.sd,p.act,p.acc,stateOf(p),!!scored); }
+    if(scored){ if(scored==='A')scoreA++; else scoreB++; unlock('goal'); recordEpisode(); if(live){ confetti(); goalFx={side:scored,t:0}; freeze=55; } else kickoffReset(); }
+    else if(tick>=(live?PLAYMAX:MAXT)){ recordEpisode(); kickoffReset(); }
+  }
+  function recordEpisode(){ for(const p of players) learn(teamQ(p.team),p.sd,p.act,p.acc,stateOf(p),true);
+    const tt=Math.max(1,tick); skA=skA*0.82+(progA/tt)*0.18; skB=skB*0.82+(progB/tt)*0.18;
+    aHist.push(clamp(skA*1.7,0,1)); bHist.push(clamp(skB*1.7,0,1)); if(aHist.length>160){aHist.shift();bHist.shift();}
+    episode++; }
+  function kickoffReset(){ progA=0;progB=0;tick=0; goalFx=null; kickoff(); }
+  function trainFast(n){ unlock('watcher'); freeze=0;goalFx=null; const t=episode+n; let g=0; while(episode<t&&g<n*MAXT*1.3){tickStep(false);g++;} updateUI(); }
+  function phaseIdx(){ const g=scoreA+scoreB,sc=(skA+skB)/2; if(g>=10)return 3; if(g>=2)return 2; if(sc>0.10)return 1; return 0; }
+  const PH=[
+    {c:'#6366F1',l:'שלב 1 · חקירה',m:'הזיכרון ריק — השחקנים זזים אקראית והכדור בקושי זז. הם אוספים את הניסיון הראשון שלהם.'},
+    {c:'#F59E0B',l:'שלב 2 · רצים לכדור',m:'הם לומדים את הדבר הראשון שמשתלם: להגיע לכדור ולהשתלט עליו. הכדור מתחיל לזוז עם כוונה.'},
+    {c:'#22C55E',l:'שלב 3 · בועטים לשער',m:'הם מגלים שדחיפת הכדור לכיוון שער היריב נותנת פרס גדול — והגולים הראשונים נופלים!'},
+    {c:'#A855F7',l:'שלב 4 · משחק אמיתי',m:'שתי הקבוצות תוקפות, בולמות ובועטות. ההתקפה משוכללת — זה כבר משחק כדורגל ממשי.'},
+  ];
+  function thoughtFor(label,p){ if(!p||!p.info)return label+' חושבת…';
+    const sees='רואה את הכדור '+posWords(p.info.by,p.info.bx); const act='רצה '+moveWords(DIRS[p.info.a][1],DIRS[p.info.a][0]);
+    return '<b>'+label+'</b> '+sees+' ← '+act+(p.why?' <span style="color:#64748B">· '+p.why+'</span>':''); }
+  function updateTimerS(){ if(!tSecsS)return; const remain=Math.max(0,PLAYMAX-tick); tSecsS.textContent=Math.ceil(remain/Math.max(1,sps*60))+' ש׳'; tBarS.style.width=(100*remain/PLAYMAX)+'%'; }
+  function updateUI(){ updateTimerS(); aMet.textContent=scoreA; bMet.textContent=scoreB; aBar.style.width=Math.round(clamp(skA*1.7,0,1)*100)+'%'; bBar.style.width=Math.round(clamp(skB*1.7,0,1)*100)+'%'; curveA.draw(aHist); curveB.draw(bHist);
+    const lv = episode<15?['מתחיל · ריצה אקראית','#94A3B8'] : episode<60?['חובב · מתחיל להבין','#F59E0B'] : episode<160?['מתקדם · רץ לכדור','#3B82F6'] : ['מקצוען · תוקף לשער','#22C55E'];
+    lvlTxtS.textContent=lv[0]; levelElS.style.background='linear-gradient(145deg,'+lv[1]+',#0007)';
+    const i=phaseIdx(); nar.set(i,PH[i].c,PH[i].l,PH[i].m);
+    const a0=players.find(p=>p.team==='A'),b0=players.find(p=>p.team==='B');
+    thoughts.set(0,thoughtFor('הקבוצה האדומה',a0),a0&&a0.ex); thoughts.set(1,thoughtFor('הקבוצה הכחולה',b0),b0&&b0.ex); }
+  function drawGoal(side){ ctx.fillStyle='rgba(255,255,255,.85)'; ctx.fillRect(side===0?0:W-7,gT,7,gB-gT); ctx.fillStyle=side===0?'#3B82F6':'#EF4444'; ctx.fillRect(side===0?0:W-4,gT,4,gB-gT); }
+  function draw(){ if(!cv.isConnected)return; ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#2E8B57'; rr(ctx,0,0,W,H,14); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.06)'; for(let i=0;i<8;i++)if(i%2===0)ctx.fillRect(i*W/8,0,W/8,H);
+    ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=2; ctx.strokeRect(4,4,W-8,H-8); ctx.beginPath();ctx.moveTo(W/2,4);ctx.lineTo(W/2,H-4);ctx.stroke(); ctx.beginPath();ctx.arc(W/2,H/2,36,0,6.28);ctx.stroke();
+    drawGoal(0); drawGoal(W);
+    for(const p of players){ ctx.beginPath();ctx.arc(p.x,p.y,PR,0,6.28); ctx.fillStyle=p.team==='A'?'#EF4444':'#3B82F6'; ctx.fill(); ctx.lineWidth=3;ctx.strokeStyle='#fff';ctx.stroke(); }
+    ctx.beginPath();ctx.arc(ball.x,ball.y,BR,0,6.28);ctx.fillStyle='#fff';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#111';ctx.stroke(); ctx.fillStyle='#111';ctx.beginPath();ctx.arc(ball.x,ball.y,BR*0.45,0,6.28);ctx.fill();
+    if(goalFx){ const p=clamp(goalFx.t/55,0,1); ctx.save(); ctx.globalAlpha=(1-p)*0.65; ctx.fillStyle=goalFx.side==='A'?'#EF4444':'#3B82F6'; ctx.fillRect(goalFx.side==='A'?W-12:0,gT,12,gB-gT); ctx.globalAlpha=clamp(1-p*0.7,0,1); ctx.lineWidth=3; ctx.strokeStyle=goalFx.side==='A'?'#EF4444':'#3B82F6'; ctx.fillStyle='#fff'; ctx.font='800 32px "Fredoka","Rubik",sans-serif'; ctx.textAlign='center'; ctx.strokeText('גול!',W/2,H/2-8); ctx.fillText('גול!',W/2,H/2-8); ctx.restore(); } }
+  function frame(t){ if(!cv.isConnected){playing=false;return;} if(freeze>0){ if(goalFx)goalFx.t++; freeze--; if(freeze===0){kickoffReset();updateUI();} } else if(playing){ const n=Math.max(1,Math.round(sps)); for(let i=0;i<n&&freeze===0;i++)tickStep(true); if((++uiAcc)>=6){uiAcc=0;updateUI();} } draw(); raf=requestAnimationFrame(frame); }
+
+  const lab=labShell(ICON.reward,['#22C55E','#15803D'],'כדורגל AI · פיזיקה בסגנון HaxBall','AI Soccer · momentum, kicks & bounces',
+    'מנוע פיזיקה רציף: לשחקנים ולכדור יש מהירות, תאוצה, חיכוך והתנגשויות — כמו ב-HaxBall. שתי הקבוצות לומדות לבד להגיע לכדור ולבעוט אותו לשער. עקבו אחרי קו ההתקדמות של כל קבוצה ואחרי "המחשבות" שלהן בזמן אמת.');
+  cv=el('canvas',{class:'sim',width:W*DPR,height:H*DPR,style:{width:W+'px',maxWidth:'100%'}}); ctx=cv.getContext('2d');
+  tSecsS=el('span',{class:'secs'},''); tBarS=el('i',{style:{width:'100%'}});
+  timerElS=el('div',{class:'round-timer chase'}, svg(ICON.clock,{stroke:'#DC2626'}), el('b',{},'זמן המשחק'), tSecsS, el('span',{class:'bar'},tBarS));
+  lvlTxtS=el('b',{},'מתחיל'); levelElS=el('div',{class:'level-badge',style:{background:'linear-gradient(145deg,#94A3B8,#0006)'}}, svg(ICON.brain,{stroke:'#fff'}), el('span',{},'רמת הבוטים: '), lvlTxtS);
+  aMet=el('div',{class:'metric'},'0'); aBar=el('i',{style:{width:'0%',background:'linear-gradient(90deg,#EF4444,#F87171)'}}); curveA=MiniCurve('#EF4444');
+  bMet=el('div',{class:'metric'},'0'); bBar=el('i',{style:{width:'0%',background:'linear-gradient(90deg,#3B82F6,#60A5FA)'}}); curveB=MiniCurve('#3B82F6');
+  const teams=el('div',{class:'teams'},
+    el('div',{class:'team-panel'}, el('h5',{}, el('span',{class:'dot',style:{background:'#EF4444'}}),'קבוצה אדומה'), aMet, el('div',{class:'ml'},'גולים'), el('div',{class:'skill-bar'},aBar), el('div',{class:'ml'},'כושר התקפה'), curveA.cv),
+    el('div',{class:'team-panel'}, el('h5',{}, el('span',{class:'dot',style:{background:'#3B82F6'}}),'קבוצה כחולה'), bMet, el('div',{class:'ml'},'גולים'), el('div',{class:'skill-bar'},bBar), el('div',{class:'ml'},'כושר התקפה'), curveB.cv));
+  nar=Narrative(); thoughts=Thoughts([{color:'#EF4444'},{color:'#3B82F6'}]);
+  let playBtn; function setPlaying(p){playing=p;if(p)unlock('watcher');playBtn.replaceChildren(svg(p?ICON.pause:ICON.play),p?'עצור':'הפעלה');}
+  playBtn=el('button',{class:'btn green sm',type:'button',onClick:()=>setPlaying(!playing)},svg(ICON.play),'הפעלה');
+  const spS=mkSlider('מהירות',1,8,1,sps,v=>v+'×',v=>sps=v);
+  lab.appendChild(el('div',{class:'lab-stage two'},
+    el('div',{class:'canvas-box'}, levelElS, timerElS, cv, el('div',{class:'legend'}, leg('#EF4444','אדומים'), leg('#3B82F6','כחולים'), leg('#fff','כדור'))),
+    el('div',{}, nar.root, thoughts.root, teams)));
+  lab.appendChild(el('div',{class:'sliders'}, spS.wrap));
+  lab.appendChild(el('div',{class:'controls'}, playBtn,
+    tbtn(ICON.step,'צעד',null,()=>{ if(freeze>0){freeze=0;kickoffReset();} else {for(let i=0;i<HOLD;i++)tickStep(true);} updateUI(); }),
+    tbtn(ICON.bolt,'⚡ אמן 300 פרקים','amber',()=>{setPlaying(false);trainFast(300);}),
+    tbtn(ICON.reset,'איפוס','pink',()=>{setPlaying(false);resetAll();updateUI();})));
+  lab.appendChild(tryBox(el('b',{},'להדגמה מהירה: '),'הפעילו (Play) וראו ריצה ',el('b',{},'אקראית ומגושמת'),'. לחצו פעם אחת על ',el('b',{},'⚡ אמן'),' — והקבוצות יתחילו לרוץ אל הכדור בצורה חדה ולבעוט לשער. ההבדל בין ההתחלה ה"טיפשה" לסוף ה"מקצועני" קופץ לעין.'));
+  resetAll(); updateUI(); draw(); raf=requestAnimationFrame(frame);
+  return lab;
+}
+
+/* ---------- רצועת הסבר: איך הבוטים לומדים ---------- */
+function howBots(){
+  const steps=[
+    {ic:ICON.target,c:'#6366F1',t:'1. רואה',d:'הבוט בודק את המצב — איפה היריב או הכדור נמצאים יחסית אליו.'},
+    {ic:ICON.policy,c:'#A855F7',t:'2. בוחר',d:'מסתכל בטבלת הזיכרון: איזו פעולה נתנה הכי הרבה נקודות במצב כזה בעבר.'},
+    {ic:ICON.spark,c:'#F59E0B',t:'3. מנסה',d:'לפעמים בוחר פעולה אקראית (חקירה) כדי לגלות אפשרויות חדשות.'},
+    {ic:ICON.reward,c:'#22C55E',t:'4. מקבל פרס',d:'נקודה חיובית על מהלך טוב, שלילית על רע — זה כל מה שמנחה אותו.'},
+    {ic:ICON.brain,c:'#EC4899',t:'5. לומד',d:'מעדכן את הטבלה, ובפעם הבאה יבחר טוב יותר. חוזר על זה אלפי פעמים.'},
+  ];
+  return el('div',{class:'howbots'}, steps.map(s=>el('div',{class:'st'},
+    el('div',{class:'ic',style:{background:'linear-gradient(145deg,'+s.c+',#0004)'}},svg(s.ic,{stroke:'#fff',fill:s.ic===ICON.reward?'#fff':'none'})),
+    el('b',{},s.t), el('span',{},s.d))));
+}
+function deepDive(){
+  const d=el('details',{class:'deepdive'});
+  d.appendChild(el('summary',{}, svg(ICON.brain,{stroke:'#4F46E5'}), 'מאחורי הקלעים — איך זה עובד באמת (להרחבה)'));
+  d.appendChild(el('div',{class:'dd-body'},
+    el('p',{html:'<b>מה זה ה"זיכרון" של הבוט?</b> לכל בוט יש טבלה פשוטה: לכל מצב (איפה היריב/הכדור) רשום כמה "שווה" כל פעולה. בהתחלה הטבלה מלאה אפסים — לכן הבוט פשוט מנחש.'}),
+    el('p',{html:'<b>איך הטבלה מתמלאת?</b> אחרי כל מהלך הבוט מקבל פרס (נקודות). אם המהלך הצליח, הוא מגדיל מעט את הציון של אותה פעולה במצב הזה. ככה, צעד-אחר-צעד, הטבלה "זוכרת" מה עובד. זו בדיוק שיטת Q-Learning.'}),
+    el('p',{html:'<b>למה הוא לפעמים זז "מטופש"?</b> זו חקירה (Exploration): הבוט מנסה מהלך אקראי כדי לא לפספס אפשרויות שלא ניסה. ככל שהוא בטוח יותר, הוא חוקר פחות. את האיזון הזה שולטים עם הסליידר ε.'}),
+    el('p',{html:'<b>החדש כאן:</b> בתופסת יש שלב תכנון קצר שבו הבורחים יכולים לגרור מכשולים שכבר נמצאים על המפה ולבנות מהם מסתור. בהתחלה הם בכלל לא יודעים שזה אפשרי — הם פשוט נמלטים ונתפסים. אבל הפרס הגדול על "התופס לא מצליח להגיע" מלמד אותם, סיבוב אחרי סיבוב, לגרור מכשול ולחסום את הדרך — וכך בוט "טיפש" הופך לאסטרטג שמסתגר. אף אחד לא תיכנת את האסטרטגיה; היא צומחת מהלמידה. עקומת ה"שרידוּת" מראה את ההפיכה הזו בזמן אמת.'})
+  ));
+  return d;
+}
+
+/* ---------- קיר ההישגים ---------- */
+function badgesWall(){
+  const wrap=el('section',{class:'lab clay'},
+    el('div',{class:'lab-head'}, el('div',{class:'badge-ic',style:{background:'linear-gradient(145deg,#FCD34D,#F59E0B)'}},svg(ICON.medal,{stroke:'#fff'})),
+      el('div',{}, el('h3',{},'ההישגים שלך'), el('div',{style:{color:'var(--muted)',fontSize:'.85rem'}},'נשמרים אצלך בדפדפן'))),
+    el('p',{class:'lab-desc'},'פתחו תגים תוך כדי קריאה ומשחק.'));
+  const grid=el('div',{class:'badges-wall'});
+  function paint(){ grid.replaceChildren.apply(grid, Object.keys(BADGES).map(id=>{ const b=BADGES[id],un=!!state.badges[id];
+    return el('div',{class:'badge '+(un?'unlocked':'locked')}, el('div',{class:'medal',style:{background:'linear-gradient(145deg,'+b.c+',#0003)'}},svg(un?b.ic:ICON.medal,{stroke:'#fff'})), el('div',{class:'t'},b.t), el('div',{class:'d'},un?b.d:'עדיין נעול')); })); }
+  window.__rlRefreshBadges=paint; paint(); wrap.appendChild(grid); return wrap;
+}
+
+/* ---------- רינדור העמוד עם טאבים ---------- */
+function renderPlay(root){
+  root.appendChild(el('section',{class:'section',style:{margin:'14px 0 8px'}},
+    el('span',{class:'eyebrow'},svg(ICON.joystick,{stroke:'#22C55E'}),'משחקי למידה · המחשב לומד מול העיניים'),
+    el('h1',{class:'section-title'},'לראות מכונה לומדת — בזמן אמת'),
+    el('p',{class:'section-sub'},'שני משחקים שבהם המחשב שולט בכל הדמויות ולומד לבד, מאפס. שום התנהגות לא מתוכנתת מראש — האלגוריתם רץ פה ועכשיו.')
+  ));
+  root.appendChild(el('div',{class:'how-read'}, el('div',{class:'ic'},svg(ICON.tip,{stroke:'#fff'})),
+    el('p',{html:'<b>איך קוראים את זה?</b> לכל קבוצה יש קו התקדמות (גרף) ואחוז מיומנות שעולים ככל שהיא לומדת, כרטיס הסבר שמתחלף לפי שלב, ושורות "מחשבה" שמתרגמות לעברית מה כל בוט רואה ומחליט כרגע.'})));
+  root.appendChild(howBots());
+  root.appendChild(deepDive());
+  const tabP=el('button',{class:'game-tab active',type:'button'},svg(ICON.target),'משחק תופסת');
+  const tabS=el('button',{class:'game-tab',type:'button'},svg(ICON.reward),'כדורגל AI');
+  const mount=el('div',{});
+  function show(w){ mount.replaceChildren(w==='p'?PursuitGame():SoccerGame()); tabP.classList.toggle('active',w==='p'); tabS.classList.toggle('active',w==='s'); }
+  tabP.addEventListener('click',()=>show('p')); tabS.addEventListener('click',()=>show('s'));
+  root.appendChild(el('div',{class:'game-tabs',style:{marginTop:'18px'}}, tabP, tabS));
+  root.appendChild(mount);
+  show('p');
+  root.appendChild(badgesWall());
+}
+register('play', renderPlay);
+})();
+</script>
+<script>/* אתחול אחרון אחרי שכל הדפים נרשמו */ if(window.__rlBoot) window.__rlBoot();</script>
+</body>
+</html>
