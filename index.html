@@ -492,6 +492,58 @@ canvas.sim{max-width:100%;height:auto;border-radius:12px;touch-action:none}
   .lesson{padding:20px}
 }
 
+/* ---------- כתב ויתור (עמוד המשחקים) ---------- */
+.disclaimer-note{display:flex;gap:13px;align-items:flex-start;margin:18px 0 4px;padding:15px 17px;
+  border-radius:var(--r-sm);background:linear-gradient(145deg,#FFFBEB,#FEF3C7);
+  border:3px solid #FDE68A;box-shadow:var(--sh-clay-sm)}
+.disclaimer-note .ic{flex:0 0 auto;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+  background:linear-gradient(145deg,var(--amber),#D97706)}
+.disclaimer-note .ic svg{width:20px;height:20px;color:#fff}
+.disclaimer-note p{margin:0;font-size:.95rem;color:#92400E}
+.disclaimer-note b{color:#7C2D12}
+
+/* ---------- "סרטון" הסבר מונפש בסגנון פיקסאר (עמוד הבית) ---------- */
+.explainer{max-width:760px;margin:0 auto}
+.player{position:relative;border-radius:var(--r-lg);overflow:hidden;background:#0B1026;
+  border:6px solid #fff;box-shadow:var(--sh-clay),0 22px 48px rgba(49,46,129,.30)}
+.player-screen{display:block;width:100%;height:auto}
+.player-screen text{font-family:'Fredoka','Rubik',sans-serif;direction:rtl}
+.player-screen .t-title{font-size:42px;font-weight:700;fill:#312E81}
+.player-screen .t-sub{font-size:18px;font-weight:500;fill:#475569}
+.player-screen .t-h2{font-size:27px;font-weight:700;fill:#312E81}
+.player-screen .t-cap{font-size:19px;font-weight:600;fill:#1F2440}
+.player-screen .t-card{font-size:14px;font-weight:600;fill:#312E81}
+.player-screen .t-mini{font-size:13px;font-weight:500;fill:#475569}
+.player-screen .t-h3{font-size:21px;font-weight:700;fill:#312E81}
+.player-screen .t-node{font-size:15px;font-weight:700}
+.player-screen .t-node-en{font-size:11px;fill:#64748B}
+.player-screen .t-brief{font-size:17px;font-weight:500;fill:#1F2440}
+.player-bar{position:absolute;inset-inline:0;bottom:0;display:flex;align-items:center;gap:11px;
+  padding:9px 14px 11px;background:linear-gradient(180deg,rgba(11,16,38,0),rgba(11,16,38,.82))}
+.player-bar .pb-loop{display:inline-flex;align-items:center;gap:6px;color:#A7F3D0;font-size:.78rem;
+  font-weight:600;font-family:'Fredoka',sans-serif;white-space:nowrap}
+.player-bar .pb-loop svg{width:16px;height:16px}
+.player-bar .pb-track{flex:1;height:6px;border-radius:999px;background:rgba(255,255,255,.24);overflow:hidden}
+.player-bar .pb-fill{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#22C55E,#06B6D4,#A855F7)}
+.player-bar .pb-time{color:#E0E7FF;font-size:.78rem;font-variant-numeric:tabular-nums;
+  font-family:'Fredoka',sans-serif;min-width:74px;text-align:left}
+.player-tag{position:absolute;top:13px;inset-inline-start:13px;display:inline-flex;align-items:center;gap:7px;
+  padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);
+  font-family:'Fredoka',sans-serif;font-weight:600;font-size:.8rem;color:#312E81;box-shadow:var(--sh-clay-sm)}
+.player-tag .rec{width:9px;height:9px;border-radius:50%;background:var(--red);animation:recPulse 1.6s var(--ease-out) infinite}
+@keyframes recPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+.player-screen .m-eyes{transform-box:fill-box;transform-origin:center;animation:blink 4.4s var(--ease-out) infinite}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}96.5%{transform:scaleY(.12)}}
+.player-screen .m-ant{transform-box:fill-box;transform-origin:center;animation:antP 2.4s ease-in-out infinite}
+@keyframes antP{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.3);opacity:1}}
+.player-screen .float{transform-box:fill-box;animation:floatY 4s ease-in-out infinite}
+.player-screen .float2{transform-box:fill-box;animation:floatY 3.2s ease-in-out infinite}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.player-screen .bokeh{transform-box:fill-box;animation:drift 9s ease-in-out infinite}
+@keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(14px,-18px)}}
+.player-screen .conf{transform-box:fill-box;animation:confFall 3.2s linear infinite}
+@keyframes confFall{0%{transform:translateY(-50px) rotate(0)}100%{transform:translateY(540px) rotate(420deg)}}
+
 /* ---------- העדפת תנועה מופחתת ---------- */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
@@ -799,6 +851,18 @@ function renderHome(root){
     )
   ));
 
+  /* ----- "סרטון" הסבר מונפש (סגנון פיקסאר) ----- */
+  const exWrap=el('div',{class:'explainer'});
+  root.appendChild(el('section',{class:'section'},
+    el('div',{style:{textAlign:'center',marginBottom:'22px'}},
+      el('span',{class:'eyebrow'}, svg(ICON.play,{fill:'#EC4899',stroke:'none'}),'סרטון מונפש'),
+      el('h2',{class:'section-title'},'הסיפור מאחורי הפרויקט'),
+      el('p',{class:'section-sub',style:{marginInline:'auto'}},'סיור קצר ומונפש: מהי למידה מחוזקת, איך נבנה האתר, ובסוף תקציר על הנושא והתהליך.')
+    ),
+    exWrap
+  ));
+  buildExplainer(exWrap);
+
   /* ----- CTA סופי ----- */
   root.appendChild(el('section',{class:'section'},
     el('div',{class:'cta-band'},
@@ -883,6 +947,345 @@ function buildHeroLoop(stage){
       if(stage.isConnected) requestAnimationFrame(anim);
     })(performance.now());
   } else { nodeEls[0].halo.setAttribute('opacity','0.20'); dot.setAttribute('cx',cx);dot.setAttribute('cy',cy-R); }
+}
+
+/* ===================================================================
+   "סרטון" הסבר מונפש בסגנון פיקסאר (עמוד הבית, אזור תחתון)
+   אנימציית SVG עצמאית (~1:52 דק') — מסבירה מהי RL, איך בנינו את האתר,
+   ובסוף תקציר קצר על הנושא והתהליך.
+   =================================================================== */
+function buildExplainer(mountEl){
+  const NS='http://www.w3.org/2000/svg';
+
+  /* דמות מרכזית עקבית ("הסוכן") — רובוט עגול וחמוד, ממורכז ב-(0,0) */
+  const mascot=()=>`
+    <ellipse cx="0" cy="96" rx="60" ry="13" fill="#1E293B" opacity=".16" filter="url(#exSoft)"/>
+    <line x1="0" y1="-66" x2="0" y2="-92" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+    <circle class="m-ant" cx="0" cy="-98" r="9" fill="#FCD34D" filter="url(#exGlow)"/>
+    <rect x="-68" y="-68" width="136" height="136" rx="46" fill="url(#exMascot)" stroke="#fff" stroke-width="4"/>
+    <path d="M-54 -36 Q -62 -60 -34 -62" stroke="#BAE6FD" stroke-width="7" fill="none" opacity=".75" stroke-linecap="round"/>
+    <ellipse cx="-37" cy="11" rx="9" ry="6" fill="#F9A8D4" opacity=".55"/>
+    <ellipse cx="37" cy="11" rx="9" ry="6" fill="#F9A8D4" opacity=".55"/>
+    <rect x="-46" y="-40" width="92" height="62" rx="26" fill="#0B1026"/>
+    <g class="m-eyes">
+      <circle cx="-18" cy="-10" r="11" fill="#fff"/><circle cx="18" cy="-10" r="11" fill="#fff"/>
+      <circle cx="-15" cy="-7" r="5.5" fill="#1E293B"/><circle cx="21" cy="-7" r="5.5" fill="#1E293B"/>
+      <circle cx="-17" cy="-12" r="2" fill="#fff"/><circle cx="19" cy="-12" r="2" fill="#fff"/>
+    </g>
+    <path class="m-mouth" d="M-14 9 Q 0 21 14 9" stroke="#7DD3FC" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+
+  /* כרטיס "מאחורי הקלעים" (סצנת הבנייה) */
+  const card=(inner,label)=>`
+    <ellipse cx="80" cy="200" rx="64" ry="9" fill="#312E81" opacity=".12" filter="url(#exSoft)"/>
+    <rect x="0" y="0" width="160" height="196" rx="24" fill="#fff" stroke="#EEF2FF" stroke-width="3"/>
+    ${inner}
+    <text x="80" y="176" text-anchor="middle" class="t-card">${label}</text>`;
+  const c0=card(`
+    <rect x="30" y="32" width="100" height="74" rx="18" fill="#EEF2FF"/>
+    <circle cx="56" cy="69" r="14" fill="#6366F1"/><circle cx="84" cy="69" r="14" fill="#22C55E"/><circle cx="112" cy="69" r="14" fill="#F59E0B"/>
+    <rect x="34" y="120" width="92" height="12" rx="6" fill="#E0E7FF"/>`,'עיצוב פלסטלינה');
+  const c1=card(`
+    <rect x="28" y="32" width="104" height="78" rx="16" fill="#0B1026"/>
+    <text x="80" y="82" text-anchor="middle" font-size="32" font-weight="700" fill="#A7F3D0" font-family="Fredoka,monospace">&lt;/&gt;</text>
+    <rect x="38" y="120" width="84" height="12" rx="6" fill="#E0E7FF"/>`,'JavaScript טהור');
+  const c2=card(`
+    <rect x="30" y="32" width="100" height="78" rx="16" fill="#EEF2FF"/>
+    <text x="80" y="72" text-anchor="middle" font-size="24" font-weight="700" fill="#6366F1" font-family="Fredoka,sans-serif">Q</text>
+    <path d="M58 92 q22 -22 44 0" stroke="#A855F7" stroke-width="4" fill="none"/>
+    <circle cx="58" cy="92" r="4" fill="#22C55E"/><circle cx="102" cy="92" r="4" fill="#F59E0B"/>`,'Q-Learning מאפס');
+  const c3=card(`
+    <g stroke="#C7D2FE" stroke-width="2">
+      <rect x="28" y="34" width="52" height="52" rx="8" fill="#EEF2FF"/>
+      <line x1="28" y1="51" x2="80" y2="51"/><line x1="28" y1="68" x2="80" y2="68"/>
+      <line x1="45" y1="34" x2="45" y2="86"/><line x1="63" y1="34" x2="63" y2="86"/>
+    </g>
+    <circle cx="36" cy="42" r="5" fill="#EC4899" stroke="none"/>
+    <circle cx="112" cy="68" r="16" fill="#fff" stroke="#1E293B" stroke-width="3"/>
+    <path d="M112 56 L118 65 108 71 z" fill="#1E293B"/>`,'2 משחקים לומדים');
+
+  /* קונפטי לסצנת הסיכום */
+  const cols=['#F59E0B','#22C55E','#EC4899','#6366F1','#06B6D4','#A855F7'];
+  let conf='';
+  for(let i=0;i<16;i++){ const x=50+i*46, c=cols[i%cols.length], d=(i*0.21).toFixed(2), w=8+(i%3)*3;
+    conf+=`<rect class="conf" x="${x}" y="0" width="${w}" height="${w+4}" rx="2" fill="${c}" style="animation-delay:-${d}s"/>`; }
+  /* בועות אור (בוקה) לעומק */
+  const bokeh=(seed)=>{ let b=''; [[120,120,26],[680,90,34],[610,330,20],[150,330,22],[400,70,16]].forEach((p,i)=>{
+    b+=`<circle class="bokeh" cx="${p[0]}" cy="${p[1]}" r="${p[2]}" fill="#fff" opacity=".18" style="animation-delay:-${((i+seed)*1.3).toFixed(1)}s"/>`; }); return b; };
+  /* צומת בלולאת ה-RL (סצנה 2) */
+  const loopNode=(cx,cy,color,he,en,id)=>`
+    <circle id="${id}" cx="${cx}" cy="${cy}" r="42" fill="${color}" opacity="0"/>
+    <circle cx="${cx}" cy="${cy}" r="38" fill="#fff" stroke="${color}" stroke-width="5"/>
+    <text x="${cx}" y="${cy-1}" text-anchor="middle" class="t-node" fill="${color}">${he}</text>
+    <text x="${cx}" y="${cy+15}" text-anchor="middle" class="t-node-en">${en}</text>`;
+  /* שורת תקציר עם וי ירוק (סצנה 6) */
+  const briefLine=(id,cy,color,txt)=>`
+    <g id="${id}">
+      <circle cx="700" cy="${cy}" r="11" fill="${color}"/>
+      <path d="M694 ${cy} l4 4 8 -8" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="684" y="${cy+5}" text-anchor="start" class="t-brief">${txt}</text>
+    </g>`;
+
+  const SVG=`<svg class="player-screen" viewBox="0 0 800 500" xmlns="${NS}" role="img" aria-label="סרטון הסבר מונפש על למידה מחוזקת ועל הפרויקט">
+    <defs>
+      <radialGradient id="exSkyTitle" cx="50%" cy="36%" r="82%"><stop offset="0" stop-color="#FEF3C7"/><stop offset=".5" stop-color="#FBCFE8"/><stop offset="1" stop-color="#C7D2FE"/></radialGradient>
+      <linearGradient id="exSky1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DBEAFE"/><stop offset="1" stop-color="#EDE9FE"/></linearGradient>
+      <linearGradient id="exSky2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E0E7FF"/><stop offset="1" stop-color="#FCE7F3"/></linearGradient>
+      <linearGradient id="exSky3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#CFFAFE"/><stop offset="1" stop-color="#E0E7FF"/></linearGradient>
+      <linearGradient id="exSky4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCFCE7"/><stop offset="1" stop-color="#E0E7FF"/></linearGradient>
+      <radialGradient id="exSkyOut" cx="50%" cy="40%" r="85%"><stop offset="0" stop-color="#FDE68A"/><stop offset=".55" stop-color="#FCA5A5"/><stop offset="1" stop-color="#A5B4FC"/></radialGradient>
+      <linearGradient id="exMascot" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#34D399"/><stop offset=".55" stop-color="#22D3EE"/><stop offset="1" stop-color="#6366F1"/></linearGradient>
+      <radialGradient id="exStar" cx="50%" cy="38%" r="68%"><stop offset="0" stop-color="#FFFBEB"/><stop offset=".4" stop-color="#FCD34D"/><stop offset="1" stop-color="#F59E0B"/></radialGradient>
+      <radialGradient id="exVig" cx="50%" cy="50%" r="75%"><stop offset="55%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#0B1026" stop-opacity=".32"/></radialGradient>
+      <linearGradient id="exRing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366F1"/><stop offset=".5" stop-color="#EC4899"/><stop offset="1" stop-color="#F59E0B"/></linearGradient>
+      <filter id="exSoft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6"/></filter>
+      <filter id="exGlow" x="-90%" y="-90%" width="280%" height="280%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+
+    <g id="exSc0" opacity="1">
+      <rect width="800" height="500" fill="url(#exSkyTitle)"/>
+      <ellipse cx="160" cy="470" rx="280" ry="120" fill="#fff" opacity=".35"/>
+      <ellipse cx="660" cy="480" rx="300" ry="120" fill="#fff" opacity=".3"/>
+      ${bokeh(0)}
+      <g class="float"><g transform="translate(400,222) scale(1.05)">${mascot()}</g></g>
+      <text x="400" y="372" text-anchor="middle" class="t-title">הסיפור מאחורי הפרויקט</text>
+      <text x="400" y="406" text-anchor="middle" class="t-sub">בואו נכיר את עולם הלמידה המחוזקת — בלי לפחד</text>
+    </g>
+
+    <g id="exSc1" opacity="0">
+      <rect width="800" height="500" fill="url(#exSky1)"/>
+      <rect x="0" y="360" width="800" height="140" fill="#C7D2FE" opacity=".5"/>
+      <line x1="0" y1="360" x2="800" y2="360" stroke="#A5B4FC" stroke-width="4"/>
+      <text x="400" y="50" text-anchor="middle" class="t-h2">מה זה בעצם למידה מחוזקת?</text>
+      <rect x="250" y="70" width="300" height="15" rx="8" fill="#E0E7FF" stroke="#C7D2FE" stroke-width="2"/>
+      <rect id="ex1bar" x="250" y="70" width="0" height="15" rx="8" fill="url(#exMascot)"/>
+      <text x="240" y="83" text-anchor="end" class="t-mini">מיומנות</text>
+      <circle id="ex1spark" cx="582" cy="250" r="40" fill="none" stroke="#FCD34D" stroke-width="5" opacity="0"/>
+      <g id="ex1star" transform="translate(582,250)">
+        <circle r="46" fill="#FDE68A" opacity=".4" filter="url(#exGlow)"/>
+        <path d="M0 -34 L10 -11 35 -9 16 7 22 33 0 19 -22 33 -16 7 -35 -9 -10 -11 Z" fill="url(#exStar)" stroke="#fff" stroke-width="3"/>
+      </g>
+      <g id="ex1agent" transform="translate(180,300) scale(.62)">${mascot()}</g>
+      <text id="ex1cap" x="400" y="408" text-anchor="middle" class="t-cap"></text>
+    </g>
+
+    <g id="exSc2" opacity="0">
+      <rect width="800" height="500" fill="url(#exSky2)"/>
+      <text x="400" y="48" text-anchor="middle" class="t-h2">לולאת הלמידה — הלב של הכול</text>
+      <circle cx="400" cy="232" r="120" fill="none" stroke="url(#exRing)" stroke-width="9" stroke-dasharray="4 16" stroke-linecap="round" opacity=".7"/>
+      ${loopNode(400,112,'#6366F1','סוכן','Agent','ex2n0')}
+      ${loopNode(520,232,'#A855F7','פעולה','Action','ex2n1')}
+      ${loopNode(400,352,'#F59E0B','תגמול','Reward','ex2n2')}
+      ${loopNode(280,232,'#22C55E','מצב','State','ex2n3')}
+      <circle id="ex2dot" cx="400" cy="112" r="9" fill="#fff" stroke="#312E81" stroke-width="3"/>
+      <text id="ex2cap" x="400" y="432" text-anchor="middle" class="t-cap"></text>
+    </g>
+
+    <g id="exSc3" opacity="0">
+      <rect width="800" height="500" fill="url(#exSky3)"/>
+      <text x="400" y="50" text-anchor="middle" class="t-h2">איך בוט טיפש הופך לאלוף?</text>
+      <g transform="translate(232,210)">
+        <rect x="-90" y="-80" width="180" height="160" rx="22" fill="#fff" stroke="#E0E7FF" stroke-width="3"/>
+        <rect x="-44" y="-52" width="88" height="88" rx="16" fill="#EEF2FF"/>
+        <circle cx="-18" cy="-26" r="6" fill="#6366F1"/><circle cx="18" cy="-26" r="6" fill="#6366F1"/><circle cx="0" cy="0" r="6" fill="#6366F1"/><circle cx="-18" cy="26" r="6" fill="#6366F1"/><circle cx="18" cy="26" r="6" fill="#6366F1"/>
+        <text x="0" y="66" text-anchor="middle" class="t-card">חקירה · Explore</text>
+      </g>
+      <g transform="translate(568,210)">
+        <rect x="-90" y="-80" width="180" height="160" rx="22" fill="#fff" stroke="#E0E7FF" stroke-width="3"/>
+        <path d="M0 -52 L13 -16 50 -14 21 9 30 46 0 25 -30 46 -21 9 -50 -14 -13 -16 Z" fill="url(#exStar)" stroke="#fff" stroke-width="3"/>
+        <text x="0" y="66" text-anchor="middle" class="t-card">ניצול · Exploit</text>
+      </g>
+      <rect id="ex3hl" x="142" y="124" width="180" height="172" rx="26" fill="none" stroke="#6366F1" stroke-width="6" opacity=".9"/>
+      <text id="ex3cap" x="400" y="420" text-anchor="middle" class="t-cap"></text>
+    </g>
+
+    <g id="exSc4" opacity="0">
+      <rect width="800" height="500" fill="url(#exSky4)"/>
+      ${bokeh(2)}
+      <text x="400" y="56" text-anchor="middle" class="t-h2">איך בנינו את האתר — צעד אחר צעד</text>
+      <g id="ex4c0" transform="translate(59,128)">${c0}</g>
+      <g id="ex4c1" transform="translate(233,128)">${c1}</g>
+      <g id="ex4c2" transform="translate(407,128)">${c2}</g>
+      <g id="ex4c3" transform="translate(581,128)">${c3}</g>
+      <text id="ex4cap" x="400" y="412" text-anchor="middle" class="t-cap"></text>
+    </g>
+
+    <g id="exSc5" opacity="0">
+      <rect width="800" height="500" fill="url(#exSky1)"/>
+      <text x="400" y="50" text-anchor="middle" class="t-h2">ושני משחקים שבהם רואים מחשב לומד</text>
+      <g transform="translate(60,86)">
+        <rect x="0" y="0" width="300" height="220" rx="22" fill="#fff" stroke="#E0E7FF" stroke-width="3"/>
+        <g stroke="#E0E7FF" stroke-width="2">
+          <line x1="20" y1="70" x2="280" y2="70"/><line x1="20" y1="125" x2="280" y2="125"/><line x1="20" y1="180" x2="280" y2="180"/>
+          <line x1="85" y1="20" x2="85" y2="200"/><line x1="150" y1="20" x2="150" y2="200"/><line x1="215" y1="20" x2="215" y2="200"/>
+        </g>
+        <rect x="92" y="78" width="50" height="40" rx="8" fill="#CBD5E1"/>
+        <rect x="158" y="133" width="50" height="40" rx="8" fill="#CBD5E1"/>
+        <circle id="ex5run" cx="50" cy="50" r="15" fill="#22C55E" stroke="#fff" stroke-width="3"/>
+        <circle id="ex5cat" cx="250" cy="170" r="15" fill="#EF4444" stroke="#fff" stroke-width="3"/>
+        <text x="150" y="212" text-anchor="middle" class="t-card">תופסת לומדת</text>
+      </g>
+      <g transform="translate(440,86)">
+        <rect x="0" y="0" width="300" height="220" rx="22" fill="#16A34A" opacity=".12"/>
+        <rect x="0" y="0" width="300" height="220" rx="22" fill="none" stroke="#E0E7FF" stroke-width="3"/>
+        <line x1="150" y1="14" x2="150" y2="206" stroke="#fff" stroke-width="3" opacity=".7"/>
+        <circle cx="150" cy="110" r="34" fill="none" stroke="#fff" stroke-width="3" opacity=".7"/>
+        <rect x="0" y="80" width="10" height="60" fill="#fff" opacity=".85"/>
+        <rect x="290" y="80" width="10" height="60" fill="#fff" opacity=".85"/>
+        <circle id="ex5p1" cx="90" cy="80" r="14" fill="#6366F1" stroke="#fff" stroke-width="3"/>
+        <circle id="ex5p2" cx="210" cy="150" r="14" fill="#EC4899" stroke="#fff" stroke-width="3"/>
+        <circle id="ex5ball" cx="150" cy="110" r="9" fill="#fff" stroke="#1E293B" stroke-width="2"/>
+        <text x="150" y="212" text-anchor="middle" class="t-card">כדורגל AI</text>
+      </g>
+      <text id="ex5cap" x="400" y="408" text-anchor="middle" class="t-cap"></text>
+    </g>
+
+    <g id="exSc6" opacity="0">
+      <rect width="800" height="500" fill="url(#exSkyOut)"/>
+      <g class="confetti">${conf}</g>
+      <rect x="70" y="58" width="660" height="300" rx="28" fill="#fff" opacity=".94" stroke="#fff" stroke-width="4"/>
+      <text x="400" y="104" text-anchor="middle" class="t-h3">לסיכום — על מה הפרויקט</text>
+      ${briefLine('ex6l0',150,'#22C55E','מהי RL? מכונה שלומדת מניסיון — ניסוי, טעייה ותגמול.')}
+      ${briefLine('ex6l1',192,'#6366F1','הלב: לולאת סוכן–סביבה (מצב · פעולה · תגמול).')}
+      ${briefLine('ex6l2',234,'#EC4899','הפרויקט: אתר עברי שמסביר RL בפשטות + שני משחקים חיים.')}
+      ${briefLine('ex6l3',276,'#F59E0B','התהליך: נבנה מאפס ב-JavaScript, בעיצוב פלסטלינה.')}
+      <text x="400" y="330" text-anchor="middle" class="t-brief" fill="#475569">תודה שצפיתם — עכשיו תורכם לשחק ולראות מחשב לומד.</text>
+      <text x="400" y="404" text-anchor="middle" class="t-title">RL בכיף</text>
+    </g>
+
+    <rect width="800" height="500" fill="url(#exVig)" pointer-events="none"/>
+  </svg>`;
+
+  const holder=document.createElement('div'); holder.innerHTML=SVG;
+  const s=holder.firstElementChild;
+  const player=el('div',{class:'player'},
+    el('div',{class:'player-tag'}, el('span',{class:'rec'}), 'אנימציה · RL בכיף'));
+  player.appendChild(s);
+  const fill=el('div',{class:'pb-fill'});
+  const time=el('div',{class:'pb-time'},'0:00 / 1:52');
+  player.appendChild(el('div',{class:'player-bar'},
+    el('span',{class:'pb-loop'}, svg(ICON.play,{fill:'#A7F3D0',stroke:'none'})),
+    el('div',{class:'pb-track'}, fill), time));
+  mountEl.appendChild(player);
+
+  /* ----- מנוע הסצנות ----- */
+  const DUR=112; // שניות לסבב מלא (1:52)
+  const q=id=>s.querySelector('#'+id);
+  const sc=[q('exSc0'),q('exSc1'),q('exSc2'),q('exSc3'),q('exSc4'),q('exSc5'),q('exSc6')];
+  const win=[[0,9],[9,26],[26,46],[46,62],[62,84],[84,99],[99,112]];
+  const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const eOut=t=>1-Math.pow(1-t,3);
+  const eIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  const mmss=x=>{x=Math.floor(x);return Math.floor(x/60)+':'+String(x%60).padStart(2,'0');};
+  const fadeOp=(t,a,b)=>{const fd=.6;return cl(Math.min((t-a)/fd,(b-t)/fd,1),0,1);};
+  /* מעבר חלק בין שורות כיתוב לאורך [a,b] */
+  function beat(elT,t,a,b,lines){
+    if(!elT) return; const lt=t-a, span=b-a; if(lt<0||lt>=span) return;
+    const n=lines.length, seg=span/n, i=Math.min(n-1,Math.floor(lt/seg)), w=lt-i*seg;
+    const op=cl(Math.min(w/0.5,(seg-w)/0.5,1),0,1);
+    if(elT.__bi!==i){ elT.textContent=lines[i]; elT.__bi=i; }
+    elT.style.opacity=op.toFixed(2);
+  }
+
+  const bar=q('ex1bar'),star=q('ex1star'),spark=q('ex1spark'),agent=q('ex1agent'),cap1=q('ex1cap');
+  const cap2=q('ex2cap'),dot=q('ex2dot'),nodes=[q('ex2n0'),q('ex2n1'),q('ex2n2'),q('ex2n3')];
+  const cap3=q('ex3cap'),hl=q('ex3hl');
+  const cap4=q('ex4cap'),cards=[q('ex4c0'),q('ex4c1'),q('ex4c2'),q('ex4c3')];
+  const cap5=q('ex5cap'),run=q('ex5run'),catr=q('ex5cat'),ball=q('ex5ball'),p1=q('ex5p1'),p2=q('ex5p2');
+  const briefs=[q('ex6l0'),q('ex6l1'),q('ex6l2'),q('ex6l3')];
+
+  function paint(t){
+    sc.forEach((g,i)=>{ if(g) g.setAttribute('opacity', fadeOp(t,win[i][0],win[i][1]).toFixed(3)); });
+
+    /* סצנה 1 — סוכן → תגמול → לומד */
+    { const a=9,b=26,lp=cl((t-a)/(b-a),0,1);
+      const tp=eOut(cl(lp/0.5,0,1)), reached=lp>=0.5;
+      const bob=reached?Math.abs(Math.sin((lp-0.5)*Math.PI*6))*14:Math.abs(Math.sin(tp*Math.PI*3))*34;
+      const ax=180+tp*290, ay=300-bob;
+      if(agent) agent.setAttribute('transform','translate('+ax.toFixed(1)+','+ay.toFixed(1)+') scale(.62)');
+      if(star){ const ps=1+(reached?0.4*(1-cl((lp-0.5)/0.18,0,1)):0)+0.05*Math.sin(t*3);
+        star.setAttribute('transform','translate(582,250) scale('+ps.toFixed(3)+')'); }
+      if(spark){ const sp=cl((lp-0.5)/0.26,0,1); spark.setAttribute('opacity',reached?(1-sp).toFixed(3):'0'); spark.setAttribute('r',(40+sp*70).toFixed(1)); }
+      if(bar) bar.setAttribute('width',(reached?300*cl((lp-0.5)/0.42,0,1):0).toFixed(1));
+      beat(cap1,t,a,b,[
+        'אז מה זה בעצם למידה מחוזקת? (Reinforcement Learning)',
+        'דמיינו גור שלומד טריק: מנסה, ומקבל פינוק כשמצליח',
+        'המחשב עושה בדיוק אותו דבר — מנסה ומקבל תגמול (Reward)',
+        'כל הצלחה מחזקת את ההתנהגות, והוא משתפר בעצמו'
+      ]);
+    }
+
+    /* סצנה 2 — לולאת ה-RL */
+    { const a=26,b=46,lp=cl((t-a)/(b-a),0,1);
+      const tt=cl((lp-0.1)/0.85,0,1), ang=(-90+tt*360)*Math.PI/180;
+      if(dot){ dot.setAttribute('cx',(400+120*Math.cos(ang)).toFixed(1)); dot.setAttribute('cy',(232+120*Math.sin(ang)).toFixed(1)); }
+      const idx=Math.min(3,Math.floor(tt*4));
+      nodes.forEach((nd,i)=>{ if(nd) nd.setAttribute('opacity',(lp>0.1&&idx===i)?'0.25':'0'); });
+      beat(cap2,t,a,b,[
+        'כל הלמידה היא לולאה אחת שחוזרת שוב ושוב',
+        'הסוכן (Agent) מסתכל על המצב (State) של העולם',
+        'בוחר פעולה (Action) לפי מה שלמד עד עכשיו',
+        'מקבל תגמול (Reward) — חיובי על הצלחה, שלילי על טעות',
+        'מעדכן את עצמו… וחוזר להתחלה. וכך הוא משתפר'
+      ]);
+    }
+
+    /* סצנה 3 — חקירה מול ניצול */
+    { const a=46,b=62,lp=cl((t-a)/(b-a),0,1);
+      const k=eIO(cl((lp-0.35)/0.4,0,1));
+      if(hl){ hl.setAttribute('x',(142+k*336).toFixed(1)); hl.setAttribute('stroke', k<0.5?'#6366F1':'#F59E0B'); }
+      beat(cap3,t,a,b,[
+        'בהתחלה הסוכן מנסה כל דבר — גם טעויות',
+        'את השלב הזה קוראים חקירה (Exploration)',
+        'ואז, כשהוא יודע מה עובד — הוא חוזר על זה',
+        'את זה קוראים ניצול (Exploitation)',
+        'ככה בוט מגושם הופך לאלוף — צעד אחר צעד'
+      ]);
+    }
+
+    /* סצנה 4 — איך בנינו את האתר */
+    { const a=62,b=84,lp=cl((t-a)/(b-a),0,1), st=[0.05,0.18,0.31,0.44];
+      cards.forEach((g,i)=>{ if(!g)return; const ap=eOut(cl((lp-st[i])/0.22,0,1));
+        g.setAttribute('opacity',ap.toFixed(3));
+        g.setAttribute('transform','translate('+(59+i*174)+','+(128+(1-ap)*60).toFixed(1)+')'); });
+      beat(cap4,t,a,b,[
+        'אז איך בנינו את כל זה? צעד אחר צעד',
+        'קודם — עיצוב חמים וצבעוני, 100% בעברית (RTL)',
+        'הכול בקוד טהור: JavaScript אחד, בלי שום ספרייה',
+        'את אלגוריתם הלמידה (Q-Learning) כתבנו מאפס',
+        'ובנינו שני משחקים שבהם רואים מחשב לומד לבד'
+      ]);
+    }
+
+    /* סצנה 5 — שני המשחקים */
+    { const a=84,b=99,lp=cl((t-a)/(b-a),0,1);
+      if(run){ run.setAttribute('cx',(50+(1+Math.sin(lp*6.0))*0.5*150).toFixed(1)); run.setAttribute('cy',(40+(1+Math.cos(lp*5.0))*0.5*130).toFixed(1)); }
+      if(catr){ catr.setAttribute('cx',(250-(1+Math.sin(lp*5.0))*0.5*150).toFixed(1)); catr.setAttribute('cy',(180-(1+Math.cos(lp*4.0))*0.5*130).toFixed(1)); }
+      const bx=150+Math.sin(lp*Math.PI*3)*120, by=110+Math.cos(lp*Math.PI*2)*60;
+      if(ball){ ball.setAttribute('cx',bx.toFixed(1)); ball.setAttribute('cy',by.toFixed(1)); }
+      if(p1){ p1.setAttribute('cx',(bx-26).toFixed(1)); p1.setAttribute('cy',(by-18).toFixed(1)); }
+      if(p2){ p2.setAttribute('cx',(bx+26).toFixed(1)); p2.setAttribute('cy',(by+20).toFixed(1)); }
+      beat(cap5,t,a,b,[
+        'במשחק הראשון: בורחים ותופסים שלומדים טקטיקות לבד',
+        'הבורחים בונים מחסומים — והתופסים לומדים לחבל בהם',
+        'במשחק השני: שתי קבוצות כדורגל שלומדות להבקיע',
+        'מהתחלה מגושמת ועד מקצוענות — הכול מול העיניים'
+      ]);
+    }
+
+    /* סצנה 6 — תקציר מסכם */
+    { const a=99,b=112,lp=cl((t-a)/(b-a),0,1), st=[0.08,0.26,0.44,0.62];
+      briefs.forEach((g,i)=>{ if(!g)return; const ap=eOut(cl((lp-st[i])/0.22,0,1));
+        g.setAttribute('opacity',ap.toFixed(3));
+        g.setAttribute('transform','translate('+((1-ap)*22).toFixed(1)+',0)'); });
+    }
+
+    fill.style.width=(t/DUR*100).toFixed(2)+'%';
+    time.textContent=mmss(t)+' / '+mmss(DUR);
+  }
+
+  if(prefersReduced){ paint(4); return; }
+  const t0=performance.now();
+  (function loop(now){ if(!s.isConnected) return; paint(((now-t0)/1000)%DUR); requestAnimationFrame(loop); })(performance.now());
 }
 
 /* ===================================================================
@@ -1546,6 +1949,8 @@ function renderPlay(root){
     el('p',{html:'<b>איך קוראים את זה?</b> לכל קבוצה יש קו התקדמות (גרף) ואחוז מיומנות שעולים ככל שהיא לומדת, כרטיס הסבר שמתחלף לפי שלב, ושורות "מחשבה" שמתרגמות לעברית מה כל בוט רואה ומחליט כרגע.'})));
   root.appendChild(howBots());
   root.appendChild(deepDive());
+  root.appendChild(el('div',{class:'disclaimer-note'}, el('div',{class:'ic'},svg(ICON.warn,{stroke:'#fff'})),
+    el('p',{html:'<b>שימו לב — זו הדגמה חזותית בלבד.</b> המשחקים כאן נועדו להמחיש את רעיון הלמידה המחוזקת ולתת תחושה כיצד מכונה לומדת מניסוי וטעייה. זו אינה מערכת מושלמת: ההתנהגות נלמדת בזמן אמת, ולכן ייתכנו מהלכים מוזרים, חוסר דיוק או באגים קטנים — וזה חלק טבעי מתהליך הלמידה.'})));
   const tabP=el('button',{class:'game-tab active',type:'button'},svg(ICON.target),'משחק תופסת');
   const tabS=el('button',{class:'game-tab',type:'button'},svg(ICON.reward),'כדורגל AI');
   const mount=el('div',{});
