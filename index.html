@@ -313,6 +313,18 @@ main{max-width:var(--maxw);margin:0 auto;padding:8px clamp(14px,3.5vw,28px) 80px
 
 /* פקדים */
 .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0}
+.stage-tour{margin:16px 0 4px;padding:14px;border-radius:18px;background:linear-gradient(180deg,#fff,#FAF8FF);border:2px solid #ECE9FF}
+.stage-tour .st-cap{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.stage-tour .st-cap b{color:var(--ink)}
+.stage-tour .st-cap svg{width:18px;height:18px}
+.stage-tour .st-hint{font-size:.78rem;color:#94A3B8;font-weight:500}
+.stage-tour .st-row{display:flex;gap:8px;flex-wrap:wrap}
+.st-btn{flex:1 1 130px;display:flex;flex-direction:column;gap:3px;text-align:right;cursor:pointer;border:2px solid #E6E1FF;background:#fff;border-radius:14px;padding:10px 12px;font-family:inherit;color:#475569;transition:transform .15s var(--ease-out),box-shadow .2s,background .2s}
+.st-btn:hover{transform:translateY(-2px);box-shadow:0 10px 20px -10px rgba(99,102,241,.4)}
+.st-btn .sn{font-weight:800;font-size:.95rem}
+.st-btn .sd{font-size:.74rem;font-weight:500;opacity:.85}
+.st-btn.on{color:#fff;border-color:transparent;box-shadow:0 10px 22px -8px rgba(49,46,129,.45)}
+.st-btn.on .sd{opacity:.95}
 .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:16px 0}
 .slider{background:#fff;border-radius:var(--r-sm);padding:12px 16px;box-shadow:var(--sh-clay-sm);border:2px solid #fff}
 .slider label{display:flex;justify-content:space-between;font-weight:600;color:var(--ink);margin-bottom:8px;font-size:.95rem}
@@ -1572,6 +1584,16 @@ function Thoughts(rows){ /* rows: [{color,label}] */
   const items=rows.map(r=>{ const dot=el('span',{class:'dot',style:{background:r.color}}), t=el('span',{class:'t'},'…'), m=el('span',{class:'mode'},''); return {row:el('div',{class:'thought'},dot,t,m),t,m}; });
   return { root:el('div',{class:'thoughts'}, items.map(i=>i.row)), set(i,html,ex){ items[i].t.innerHTML=html; items[i].m.textContent=ex?'חקירה':'ניצול'; items[i].m.className='mode '+(ex?'explore':'exploit'); } };
 }
+/* בורר שלבים — מאפשר "לטייל" בין 4 שלבי הלמידה ולצפות בהתנהגות האופיינית לכל שלב */
+function StageTour(stages, onPick){
+  const btns=stages.map((s,i)=>el('button',{class:'st-btn',type:'button',title:s.d,onClick:()=>onPick(i)},
+    el('span',{class:'sn'},s.n), el('span',{class:'sd'},s.d)));
+  const root=el('div',{class:'stage-tour'},
+    el('div',{class:'st-cap'}, svg(ICON.brain,{stroke:'#6366F1'}), el('b',{},'מסע בין שלבי הלמידה'),
+      el('span',{class:'st-hint'},'לחצו על שלב כדי לאמן את הבוטים אליו ולצפות בהתנהגות שלהם')),
+    el('div',{class:'st-row'}, btns));
+  return { root, update(active){ btns.forEach((b,i)=>{ b.classList.toggle('on',i===active); b.style.background=i===active?stages[i].c:''; }); } };
+}
 function qhelpers(){ return {
   mQ:(Q,s,NA)=>{let m=-1e9;for(let i=0;i<NA;i++)m=Math.max(m,Q[s*NA+i]);return m;},
   amax:(Q,s,NA)=>{let bv=-1e9,t=[];for(let i=0;i<NA;i++){const v=Q[s*NA+i];if(v>bv+1e-9){bv=v;t=[i];}else if(Math.abs(v-bv)<1e-9)t.push(i);}return t[randInt(t.length)];}
@@ -1588,9 +1610,18 @@ function PursuitGame(){
   const ACT=[[-1,0],[0,1],[1,0],[0,-1]];
   const PLAN=60, CHASE=210, NOBST=18;   /* זמני התכנון והסיבוב (בצעדים) — סיבוב ארוך כדי שהקרב "יחזיק" */
   const QH=qhelpers();
+  const PLAY_EPS=[0.85,0.30,0.12,0.02];  /* רעש החקירה בזמן צפייה לפי שלב: שלב 1 כמעט אקראי → שלב 4 חד ומדויק */
+  const NUDGE=[0,0.30,0.42,0.55];        /* כמה התופסים "נמשכים" אל הבורח לפי שלב (0 בשלב 1 = תנועה אקראית לגמרי) */
+  const STAGE_TRAIN=[0,26,42,80];        /* כמה סיבובי-אימון להשקיע בכל שלב כדי לבנות את היכולת שלו */
+  /* פיגומי-התנהגות לפי שלב (מבטיחים שהיכולת האופיינית לכל שלב אכן נראית; גם מחזקים את ה-Q) — אינדקס לפי השלב */
+  const R_SEEK=[0,0.25,0.35,0.40];   /* בורח מחפש מחסה (זז אל מכשול) — משלב 2 */
+  const R_BARR=[0,0.18,0.16,0.12];   /* בורח גורר מכשול לחסימה — משלב 2 (הטריק המרכזי של שלב 2) */
+  const R_LOCK=[0,0,0.45,0.65];      /* בורח נועל מסתור סמוך — רק משלב 3 */
+  const C_SAB =[0,0,0.32,0.45];      /* תופס מחבל במכשול לא-נעול — רק משלב 3 */
   let Qc,Qr,catchers,runners,walls,locked,episode,phase,ptimer,ctimer,flashes,lockN,sabN;
   let sHist,cHist,survSkill,catchSkill;
-  let eps=0.03,alpha=0.5,gamma=0.92,sps=7,playing=false,raf=0,last=0,acc=0,uiAcc=0,editMode=false,freeze=0,fx=null;
+  let eps=0.03,alpha=0.35,gamma=0.92,sps=7,playing=false,raf=0,last=0,acc=0,uiAcc=0,editMode=false,freeze=0,fx=null;
+  let forcedStage=null,trainedTo=-1,_live=false,tour=null;
   let cv,ctx,nar,thoughts,sBar,cBar,sMet,cMet,sCv,cCv,epEl,tLabel,tSecs,tBar,timerEl,levelEl,lvlTxt;
 
   const key=(r,c)=>r*GS+c;
@@ -1599,15 +1630,25 @@ function PursuitGame(){
   const isLocked=(r,c)=>locked.has(key(r,c));
   const free=(r,c)=>inb(r,c)&&!isWall(r,c);
   const occupied=(r,c)=>catchers.some(a=>a.tr===r&&a.tc===c)||runners.some(a=>!a.caught&&a.tr===r&&a.tc===c);
+  const wallSides=(r,c)=>{ let n=0; for(const m of ACT){ if(isWall(r+m[0],c+m[1])) n++; } return n; };          /* כמה מכשולים *אמיתיים* סביב התא — גבולות הלוח לא נספרים */
+  const isSheltered=(r,c)=>wallSides(r,c)>=3;                                                                    /* מוסתר בתוך מסתור אמיתי = מוקף 3+ מכשולים */
+  const catFreeCell=(r,c)=>free(r,c)&&!runners.some(x=>!x.caught&&x.tr===r&&x.tc===c&&isSheltered(r,c));         /* תופס לא נכנס לתא של בורח שמסתתר במסתור מלא */
   const bucket=v=> v<=-3?0:v<0?1:v===0?2:v<3?3:4;
   function blockedBits(r,c){ let b=0; for(let k=0;k<4;k++){ if(!free(r+ACT[k][0],c+ACT[k][1])) b|=(1<<k); } return b; }
   function stateR(self,cat,ph){ return ((bucket(cat.c-self.c)*5+bucket(cat.r-self.r))*16+blockedBits(self.r,self.c))*2+ph; }
   function stateC(self,run){ return (bucket(run.c-self.c)*5+bucket(run.r-self.r))*16+blockedBits(self.r,self.c); }
-  function curEps(){ return Math.max(eps, 0.6*Math.pow(0.90,episode)); }
-  function pickR(s){ return Math.random()<curEps()?{a:randInt(NAR),ex:true}:{a:QH.amax(Qr,s,NAR),ex:false}; }
-  function pickC(s){ return Math.random()<curEps()?{a:randInt(NAC),ex:true}:{a:QH.amax(Qc,s,NAC),ex:false}; }
-  function learnR(s,a,r,ns,done){const i=s*NAR+a;Qr[i]+=alpha*(r+(done?0:gamma*QH.mQ(Qr,ns,NAR))-Qr[i]);}
-  function learnC(s,a,r,ns,done){const i=s*NAC+a;Qc[i]+=alpha*(r+(done?0:gamma*QH.mQ(Qc,ns,NAC))-Qc[i]);}
+  /* בזמן צפייה (live) ובשלב נעול — הרעש נקבע לפי השלב; אחרת לוח-זמנים דועך רגיל לאימון */
+  function curEps(){ if(_live&&forcedStage!=null) return PLAY_EPS[forcedStage]; return Math.max(eps, 0.6*Math.pow(0.95,episode)); }
+  /* בחירת/הערכת Q ברוחב-שורה קבוע (stride) אך עם מספר פעולות *מותרות* שמשתנה לפי השלב */
+  const amaxK=(Q,s,stride,k)=>{let bv=-1e9,t=[];for(let i=0;i<k;i++){const v=Q[s*stride+i];if(v>bv+1e-9){bv=v;t=[i];}else if(Math.abs(v-bv)<1e-9)t.push(i);}return t[randInt(t.length)];};
+  const mQK=(Q,s,stride,k)=>{let m=-1e9;for(let i=0;i<k;i++)m=Math.max(m,Q[s*stride+i]);return m;};
+  /* שער-פעולות לפי שלב — שלב1: זוז בלבד(0–3) · שלב2: +הזזת מכשול(4) · שלב3+: +נעילת מסתור(5); חבלת התופס(4) רק משלב 3 */
+  function runnerNA(){ const p=phaseIdx(); return p>=2?NAR:(p>=1?5:4); }
+  function catcherNA(){ return phaseIdx()>=2 ? NAC : 4; }
+  function pickR(s){ const nA=runnerNA(); return Math.random()<curEps()?{a:randInt(nA),ex:true}:{a:amaxK(Qr,s,NAR,nA),ex:false}; }
+  function pickC(s){ const nA=catcherNA(); return Math.random()<curEps()?{a:randInt(nA),ex:true}:{a:amaxK(Qc,s,NAC,nA),ex:false}; }
+  function learnR(s,a,r,ns,done){const i=s*NAR+a;Qr[i]+=alpha*(r+(done?0:gamma*mQK(Qr,ns,NAR,runnerNA()))-Qr[i]);}
+  function learnC(s,a,r,ns,done){const i=s*NAC+a;Qc[i]+=alpha*(r+(done?0:gamma*mQK(Qc,ns,NAC,catcherNA()))-Qc[i]);}
   function bfs(sr,sc){ const dist=new Int16Array(GS*GS); dist.fill(-1); if(!free(sr,sc))return dist; dist[key(sr,sc)]=0; const q=[[sr,sc]]; let h=0;
     while(h<q.length){const cur=q[h++],d=dist[key(cur[0],cur[1])]; for(const m of ACT){const nr=cur[0]+m[0],nc=cur[1]+m[1]; if(free(nr,nc)&&dist[key(nr,nc)]<0){dist[key(nr,nc)]=d+1;q.push([nr,nc]);}}} return dist; }
   const pd=(map,r,c)=>{const v=map[key(r,c)];return v<0?55:v;};
@@ -1623,7 +1664,7 @@ function PursuitGame(){
     while(placed<NOBST&&g++<600){ const r=randInt(GS),c=randInt(GS); if(!occupied(r,c)&&!walls.has(key(r,c))){ walls.add(key(r,c)); placed++; } }
     phase='plan'; ptimer=PLAN; ctimer=CHASE; flashes=[];
   }
-  function resetAll(){ Qc=new Float64Array(NSC*NAC); Qr=new Float64Array(NSR*NAR); episode=0; sHist=[];cHist=[]; survSkill=0;catchSkill=0; freeze=0;fx=null; lockN=0;sabN=0; spawn(); }
+  function resetAll(){ Qc=new Float64Array(NSC*NAC); Qr=new Float64Array(NSR*NAR); episode=0; sHist=[];cHist=[]; survSkill=0;catchSkill=0; freeze=0;fx=null; lockN=0;sabN=0; forcedStage=null;trainedTo=-1; spawn(); }
 
   /* בורח · פעולה 4: לגרור מכשול קרוב לחסימה בין עצמו לתופס */
   function doBarricade(pos,ti){ const cat=catchers[ti]; const bdir=dirToward(pos,{r:cat.tr,c:cat.tc}); const br=pos.r+ACT[bdir][0],bc=pos.c+ACT[bdir][1];
@@ -1638,18 +1679,33 @@ function PursuitGame(){
     const perp = sdir%2===0?[[0,1],[0,-1]]:[[1,0],[-1,0]];
     for(const m of perp){ const tr=sr+m[0],tc=sc+m[1]; if(inb(tr,tc)&&!isWall(tr,tc)&&!occupied(tr,tc)){ walls.delete(k); walls.add(key(tr,tc)); return true; } }
     walls.delete(k); return true; }
-  function catcherMove(p,dir){ const nr=p.r+ACT[dir][0],nc=p.c+ACT[dir][1]; return free(nr,nc)?{r:nr,c:nc}:{r:p.r,c:p.c}; }
-  function towardStep(from,to){ let best=from,bd=Math.abs(from.r-to.r)+Math.abs(from.c-to.c); for(const m of ACT){const nr=from.r+m[0],nc=from.c+m[1]; if(free(nr,nc)){const d=Math.abs(nr-to.r)+Math.abs(nc-to.c); if(d<bd){bd=d;best={r:nr,c:nc};}}} return best; }
+  function catcherMove(p,dir){ const nr=p.r+ACT[dir][0],nc=p.c+ACT[dir][1]; return catFreeCell(nr,nc)?{r:nr,c:nc}:{r:p.r,c:p.c}; }
+  function towardStep(from,to){ let best=from,bd=Math.abs(from.r-to.r)+Math.abs(from.c-to.c); for(const m of ACT){const nr=from.r+m[0],nc=from.c+m[1]; if(catFreeCell(nr,nc)){const d=Math.abs(nr-to.r)+Math.abs(nc-to.c); if(d<bd){bd=d;best={r:nr,c:nc};}}} return best; }
   function dirToward(from,to){ const dr=to.r-from.r,dc=to.c-from.c; if(Math.abs(dc)>=Math.abs(dr)) return dc>=0?1:3; return dr>=0?2:0; }
+  /* --- פיגומי-התנהגות: מבטיחים שהיכולות (חיפוש מחסה / גרירה / נעילה / חבלה) ייראו בשלב הנכון --- */
+  const hasAdjUnlockedWall=(p)=>{ for(const m of ACT){ const ar=p.r+m[0],ac=p.c+m[1]; if(isWall(ar,ac)&&!isLocked(ar,ac)) return true; } return false; };
+  function canBarricade(self,cat){ const bd=dirToward(self,cat); const br=self.r+ACT[bd][0],bc=self.c+ACT[bd][1]; if(!inb(br,bc)||isWall(br,bc)||occupied(br,bc))return false;
+    let ok=false; walls.forEach(k=>{const wr=Math.floor(k/GS),wc=k%GS,dp=Math.abs(wr-self.r)+Math.abs(wc-self.c); if(dp>0&&dp<=2)ok=true;}); return ok; }
+  function canSabotage(self,run){ const sd=dirToward(self,run); const sr=self.r+ACT[sd][0],sc=self.c+ACT[sd][1]; return isWall(sr,sc)&&!isLocked(sr,sc); }
+  function seekCoverDir(self){ let bd=1e9,bw=null; walls.forEach(k=>{const wr=Math.floor(k/GS),wc=k%GS,d=Math.abs(wr-self.r)+Math.abs(wc-self.c); if(d>0&&d<bd){bd=d;bw={r:wr,c:wc};}}); if(!bw)return -1;
+    let ba=-1,bbd=bd; for(let a=0;a<4;a++){const nr=self.r+ACT[a][0],nc=self.c+ACT[a][1]; if(free(nr,nc)){const d=Math.abs(nr-bw.r)+Math.abs(nc-bw.c); if(d<bbd){bbd=d;ba=a;}}} return ba; }
+  function nudgeRunner(self,cat){ const st=phaseIdx();
+    if(st>=2 && hasAdjUnlockedWall(self) && Math.random()<R_LOCK[st]) return 5;       /* יש מחסה צמוד → נועל אותו (שלב 3+) */
+    if(st>=1 && Math.random()<R_BARR[st] && canBarricade(self,cat)) return 4;          /* גורר מכשול לחסימה (שלב 2+) */
+    if(st>=2 && !hasAdjUnlockedWall(self) && Math.random()<R_SEEK[st]){ const a=seekCoverDir(self); if(a>=0) return a; } /* זז אל מחסה */
+    return -1; }
+  function nudgeCatcher(self,run){ const st=phaseIdx();
+    if(st>=2 && Math.random()<C_SAB[st] && canSabotage(self,run)) return 4;             /* מחבל במכשול לא-נעול (שלב 3+) */
+    return -1; }
 
-  function logicStep(live){
+  function logicStep(live){ _live=live;
     const active = phase==='chase';
     const cs=catchers.map(c=>({r:c.tr,c:c.tc})), rs=runners.map(r=>({r:r.tr,c:r.tc}));
     const bcPre=cs.map(p=>bfs(p.r,p.c)), brPre=rs.map(p=>bfs(p.r,p.c));
     const ph=active?1:0;
     /* החלטות הבורחים */
     const ri=runners.map((r,i)=>{ if(r.caught)return null; let bi=0,bd=1e9; cs.forEach((cp,j)=>{const d=pd(bcPre[j],rs[i].r,rs[i].c);if(d<bd){bd=d;bi=j;}});
-      const s=stateR(rs[i],cs[bi],ph); const pk=pickR(s); r.ex=pk.ex; r.info={dr:cs[bi].r-rs[i].r,dc:cs[bi].c-rs[i].c,a:pk.a}; return {s,a:pk.a,ti:bi,safeOld:bd}; });
+      const s=stateR(rs[i],cs[bi],ph); const pk=pickR(s); let a=pk.a; const nb=nudgeRunner(rs[i],cs[bi]); if(nb>=0){a=nb;pk.ex=false;} r.ex=pk.ex; r.info={dr:cs[bi].r-rs[i].r,dc:cs[bi].c-rs[i].c,a}; return {s,a,ti:bi,safeOld:bd}; });
     const rN=runners.map((r,i)=>{ if(r.caught)return {r:r.tr,c:r.tc}; const a=ri[i].a; r._barr=false; r._locked=0;
       if(a===4){ r._barr=doBarricade(rs[i],ri[i].ti); return {r:rs[i].r,c:rs[i].c}; }
       if(a===5){ r._locked=doLock(rs[i]); if(r._locked>0)lockN++; return {r:rs[i].r,c:rs[i].c}; }
@@ -1658,18 +1714,19 @@ function PursuitGame(){
     let ci=null, cN;
     if(active){
       ci=catchers.map((c,i)=>{ let bi=-1,bd=1e9; runners.forEach((rr,j)=>{ if(rr.caught)return; const d=Math.abs(cs[i].r-rs[j].r)+Math.abs(cs[i].c-rs[j].c); if(d<bd){bd=d;bi=j;} }); if(bi<0)bi=0; c.tgt=bi;
-        const s=stateC(cs[i],rs[bi]); const pk=pickC(s); c.ex=pk.ex; c.info={dr:rs[bi].r-cs[i].r,dc:rs[bi].c-cs[i].c,a:pk.a}; return {s,a:pk.a,ti:bi}; });
+        const s=stateC(cs[i],rs[bi]); const pk=pickC(s); let a=pk.a; const nb=nudgeCatcher(cs[i],rs[bi]); if(nb>=0){a=nb;pk.ex=false;} c.ex=pk.ex; c.info={dr:rs[bi].r-cs[i].r,dc:rs[bi].c-cs[i].c,a}; return {s,a,ti:bi}; });
       cN=catchers.map((c,i)=>{ c._sab=false; if(ci[i].a===4){ c._sab=doSabotage(cs[i],ci[i].ti); if(c._sab){sabN++; flashes.push({x:(cs[i].c+0.5)*CELL,y:(cs[i].r+0.5)*CELL,t:0,sab:true});} return {r:cs[i].r,c:cs[i].c}; } return catcherMove(cs[i],ci[i].a); });
-      catchers.forEach((c,i)=>{ if(ci[i].a<4 && Math.random()<0.4){ const tg=rN[ci[i].ti]||rs[ci[i].ti]; if(Math.max(Math.abs(cN[i].r-tg.r),Math.abs(cN[i].c-tg.c))>1) cN[i]=towardStep(cN[i],tg); } if(cN[i].r!==c.tr||cN[i].c!==c.tc)c.dir=ci[i].a; });
+      const nudgeP=NUDGE[phaseIdx()];   /* בשלב 1 = 0 → התופסים זזים אקראית לגמרי; ככל שמתקדמים הם "נמשכים" יותר אל הבורח */
+      catchers.forEach((c,i)=>{ if(ci[i].a<4 && Math.random()<nudgeP){ const tg=rN[ci[i].ti]||rs[ci[i].ti]; if(Math.max(Math.abs(cN[i].r-tg.r),Math.abs(cN[i].c-tg.c))>1) cN[i]=towardStep(cN[i],tg); } if(cN[i].r!==c.tr||cN[i].c!==c.tc)c.dir=ci[i].a; });
     } else { cN=cs.map(p=>({r:p.r,c:p.c})); }
     catchers.forEach((c,i)=>{c.tr=cN[i].r;c.tc=cN[i].c;});
     runners.forEach((r,i)=>{ if(!r.caught){r.tr=rN[i].r;r.tc=rN[i].c;} });
     const newCaught=[];
-    if(active) runners.forEach((r,i)=>{ if(r.caught)return; const cb=blockedBits(r.tr,r.tc),cv2=(cb&1)+((cb>>1)&1)+((cb>>2)&1)+((cb>>3)&1); if(cv2>=3)return; /* מוגן בתוך מסתור (3 צדדים חסומים) — אי אפשר לתפוס */ for(const c of catchers){ if(Math.abs(c.tr-r.tr)+Math.abs(c.tc-r.tc)<=1){ r.caught=true; newCaught.push(i); flashes.push({x:(r.tc+0.5)*CELL,y:(r.tr+0.5)*CELL,t:0}); break; } } });
+    if(active) runners.forEach((r,i)=>{ if(r.caught)return; if(isSheltered(r.tr,r.tc))return; /* מוגן רק בתוך מסתור אמיתי (3+ מכשולים) — פינה/קיר הלוח אינם מגינים */ for(const c of catchers){ if(Math.abs(c.tr-r.tr)+Math.abs(c.tc-r.tc)<=1){ r.caught=true; newCaught.push(i); flashes.push({x:(r.tc+0.5)*CELL,y:(r.tr+0.5)*CELL,t:0}); break; } } });
     const bcPost=cs.map(p=>bfs(p.r,p.c)), brPost=rs.map(p=>bfs(p.r,p.c));
     /* פרסים — בורחים */
     runners.forEach((r,i)=>{ if(ri[i]===null)return; const safeNew=pd(bcPost[ri[i].ti],r.tr,r.tc), hidden=!reachable(bcPost[ri[i].ti],r.tr,r.tc);
-      const cb=blockedBits(r.tr,r.tc), cn=(cb&1)+((cb>>1)&1)+((cb>>2)&1)+((cb>>3)&1);
+      const cn=wallSides(r.tr,r.tc);   /* תגמול על מחסה אמיתי (מכשולים) ולא על הצמדות לפינה/קיר הלוח */
       let rew=0.1*(safeNew-ri[i].safeOld)+0.18*cn; if(hidden)rew+=0.6; if(active)rew+=0.05;
       if(ri[i].a===4){ if(r._barr)rew+=0.08; else rew-=0.06; }
       if(ri[i].a===5){ if(r._locked>0)rew+=0.14*Math.min(r._locked,2); else rew-=0.05; }
@@ -1686,19 +1743,25 @@ function PursuitGame(){
     else { ptimer--; if(ptimer<=0){ phase='chase'; ctimer=CHASE; } }
   }
   function recordRound(){ const sf=runners.reduce((a,r)=>a+Math.min(r.alive,CHASE),0)/(runners.length*CHASE);
-    survSkill=survSkill*0.9+sf*0.1; catchSkill=catchSkill*0.9+(1-sf)*0.1; sHist.push(survSkill);cHist.push(catchSkill); if(sHist.length>160){sHist.shift();cHist.shift();}
+    survSkill=survSkill*0.94+sf*0.06; catchSkill=catchSkill*0.94+(1-sf)*0.06; sHist.push(survSkill);cHist.push(catchSkill); if(sHist.length>160){sHist.shift();cHist.shift();}
     episode++; if(survSkill>0.55)unlock('runners_pro'); if(catchSkill>0.5)unlock('catchers_pro'); }
   function doReset(){ fx=null; spawn(); }
   function endRound(live){ recordRound(); const survived=runners.some(r=>!r.caught);
     if(live){ fx={survived:survived, t:0}; freeze=60; } else doReset(); }
-  function trainFast(n){ unlock('watcher'); freeze=0;fx=null; const t=episode+n; let g=0; while(episode<t&&g<n*(PLAN+CHASE+5)){logicStep(false);g++;} updateUI(); }
+  function runEpisodes(n){ const t=episode+n; let g=0; while(episode<t&&g<n*(PLAN+CHASE+5)){logicStep(false);g++;} }
+  function trainFast(n){ unlock('watcher'); forcedStage=null;trainedTo=-1; freeze=0;fx=null; runEpisodes(n); updateUI(); }
+  /* מסע בין השלבים: מאמן בהדרגה עד השלב שנבחר (כל שלב פותח יכולת חדשה), נועל את התצוגה לשלב, ומריץ אותו חי */
+  function gotoStage(k){ unlock('watcher'); setPlaying(false); freeze=0;fx=null;
+    if(k<=trainedTo){ resetAll(); }              /* חזרה אחורה → אימון מחדש מאפס */
+    for(let s=trainedTo+1;s<=k;s++){ forcedStage=s; if(STAGE_TRAIN[s]>0) runEpisodes(STAGE_TRAIN[s]); }
+    trainedTo=k; forcedStage=k; spawn(); updateUI(); draw(); setPlaying(true); }
 
-  function phaseIdx(){ if(survSkill>0.6)return 3; if(survSkill>0.4)return 2; if(survSkill>0.2)return 1; return 0; }
+  function phaseIdx(){ if(forcedStage!=null)return forcedStage; if(survSkill>0.55)return 3; if(survSkill>0.38)return 2; if(survSkill>0.18)return 1; return 0; }
   const PH=[
-    {c:'#6366F1',l:'שלב 1 · בורחים תמימים',m:'הבורחים עדיין לא יודעים שאפשר להזיז מכשולים. הם פשוט נמלטים — ונתפסים מהר. זיכרון ריק = התנהגות "טיפשה".'},
-    {c:'#06B6D4',l:'שלב 2 · גילוי המכשולים',m:'הבורחים מגלים שדחיפת מכשול חוסמת את התופס — והתופסים מגלים שאפשר לחבל ולהזיז את המכשול הצידה כדי לעקוף.'},
-    {c:'#22C55E',l:'שלב 3 · בונים ונועלים מסתור',m:'בזמן התכנון הבורחים בונים מסתור — וגם נועלים אותו, כך שהתופסים לא יכולים לחבל בו. הם שורדים יותר ויותר.'},
-    {c:'#A855F7',l:'שלב 4 · קרב מכשולים מקצועי',m:'הבורחים נועלים מסתור משוריין; התופסים מנסים לחבל אך נכשלים מול הנעילה. שני הצדדים מנהלים קרב אובייקטים מתוחכם — בוטים שהפכו לאסטרטגים.'},
+    {c:'#6366F1',l:'שלב 1 · אפס ידע',m:'תנועות אקראיות לגמרי. הבורחים והתופסים זזים בלי לדעת איפה היריב או המכשולים — סתם מתרוצצים, והבורחים נתפסים מהר.'},
+    {c:'#06B6D4',l:'שלב 2 · מזיזים מכשולים',m:'מתחילים לזהות מיקום. הבורחים כבר נוגעים ומזיזים מכשולים — אבל עדיין בלי אסטרטגיה ברורה. הקרב מבולגן.'},
+    {c:'#22C55E',l:'שלב 3 · נועלים וחובלים',m:'הבורחים לומדים לנעול מכשולים במקום ולבנות מסתור — והתופסים לומדים לחבל ולהזיז מכשולים לא-נעולים. קרב האובייקטים מתחיל.'},
+    {c:'#A855F7',l:'שלב 4 · משחק מלא',m:'כל צד מבין 100% מהחוקים. הבורחים נועלים מסתור משוריין בזמן, התופסים מחבלים בחוכמה — שני הצדדים יכולים לנצח.'},
   ];
   function rThought(r){ if(!r||!r.info)return 'בורח חושב…'; const sees='רואה תופס '+posWords(r.info.dr,r.info.dc);
     const act=r.info.a===4?'בחר להזיז מכשול':(r.info.a===5?'בחר לנעול מסתור':('בחר ללכת '+moveWords(ACT[r.info.a][0],ACT[r.info.a][1])));
@@ -1710,9 +1773,9 @@ function PursuitGame(){
     tLabel.textContent=plan?'זמן תכנון מסתור':'זמן הסיבוב'; tSecs.textContent=Math.max(0,Math.ceil(remain/Math.max(1,sps)))+' ש׳'; tBar.style.width=(100*Math.max(0,remain)/total)+'%'; timerEl.className='round-timer '+(plan?'plan':'chase'); }
   function updateUI(){ const sp=Math.round(survSkill*100),cp=Math.round(catchSkill*100);
     sBar.style.width=sp+'%'; cBar.style.width=cp+'%'; sMet.textContent=sp+'%'; cMet.textContent=cp+'%'; epEl.textContent=episode;
-    sCv.draw(sHist); cCv.draw(cHist); const i=phaseIdx(); nar.set(i,PH[i].c,PH[i].l,PH[i].m); updateTimer();
-    const lv = episode<15?['מתחיל · תנועה אקראית','#94A3B8'] : episode<45?['חובב · מתחיל להבין','#F59E0B'] : episode<120?['מתקדם · שולט בכללים','#3B82F6'] : ['מקצוען · אסטרטג מלא','#22C55E'];
-    lvlTxt.textContent=lv[0]; levelEl.style.background='linear-gradient(145deg,'+lv[1]+',#0007)';
+    sCv.draw(sHist); cCv.draw(cHist); const i=phaseIdx(); nar.set(i,PH[i].c,PH[i].l,PH[i].m); if(tour)tour.update(i); updateTimer();
+    const LV=[['מתחיל · תנועה אקראית','#94A3B8'],['חובב · מזיז מכשולים','#F59E0B'],['מתקדם · נועל וחובל','#3B82F6'],['מקצוען · אסטרטג מלא','#22C55E']];  /* רמת הבוטים נגזרת מהשלב (i) כדי להישאר מסונכרנת עם ההסבר והטיימר */
+    lvlTxt.textContent=LV[i][0]; levelEl.style.background='linear-gradient(145deg,'+LV[i][1]+',#0007)';
     const r0=runners.find(r=>!r.caught)||runners[0], c0=catchers[0];
     thoughts.set(0, rThought(r0), r0&&r0.ex); thoughts.set(1, cThought(c0), c0&&c0.ex); }
 
@@ -1773,13 +1836,20 @@ function PursuitGame(){
   lab.appendChild(el('div',{class:'lab-stage two'},
     el('div',{class:'canvas-box'}, levelEl, timerEl, cv, el('div',{class:'legend'}, leg('#3B82F6','בורחים'), leg('#EF4444','תופסים'), leg('#475569','מכשול נייד'), leg('#B45309','מכשול נעול'))),
     el('div',{}, nar.root, thoughts.root, teams)));
+  tour=StageTour([
+    {n:'שלב 1 · אפס ידע',d:'תנועה אקראית לגמרי',c:'#6366F1'},
+    {n:'שלב 2 · מזיזים מכשולים',d:'בלי אסטרטגיה ברורה',c:'#06B6D4'},
+    {n:'שלב 3 · נועלים וחובלים',d:'מסתור נעול מול חבלה',c:'#22C55E'},
+    {n:'שלב 4 · משחק מלא',d:'אסטרטגיה מושלמת',c:'#A855F7'},
+  ], gotoStage);
+  lab.appendChild(tour.root);
   lab.appendChild(el('div',{class:'sliders'}, spS.wrap));
   lab.appendChild(el('div',{class:'controls'}, playBtn,
     tbtn(ICON.step,'צעד',null,()=>{ if(freeze>0){freeze=0;doReset();} else logicStep(true); updateUI(); }),
-    tbtn(ICON.bolt,'⚡ אמן 150 סיבובים','amber',()=>{setPlaying(false);trainFast(150);}),
+    tbtn(ICON.bolt,'⚡ אמן חופשי','amber',()=>{setPlaying(false);trainFast(30);}),
     tbtn(ICON.reset,'איפוס','pink',()=>{setPlaying(false);resetAll();updateUI();}),
     el('div',{class:'stat',style:{marginInlineStart:'auto'}}, epEl, el('div',{class:'l'},'סיבובים')) ));
-  lab.appendChild(tryBox(el('b',{},'להדגמה מהירה: '),'הפעילו (Play) וראו את הבורחים ',el('b',{},'מגושמים'),'. ואז לחצו ',el('b',{},'⚡ אמן'),' פעם אחת — הם הופכים לאסטרטגים: בזמן התכנון גוררים מכשולים, ',el('b',{},'נועלים את המסתור'),' (מכשול כתום-נעול), והתופסים מנסים לחבל אך נכשלים מול הנעילה. כך הסיבוב נמשך עד הסוף.'));
+  lab.appendChild(tryBox(el('b',{},'מסע בין השלבים: '),'לחצו על ',el('b',{},'שלב 1→2→3→4'),' בזה אחר זה — בכל לחיצה הבוטים מתאמנים לאותו שלב ואז משחקים אותו חי. בשלב 1 תנועה ',el('b',{},'אקראית לגמרי'),'; בשלב 2 כבר מזיזים מכשולים בלי תכנון; בשלב 3 הבורחים ',el('b',{},'נועלים מסתור'),' (מכשול כתום) והתופסים מחבלים; בשלב 4 — משחק מלא שבו כל צד יכול לנצח. (',el('b',{},'⚡ אמן חופשי'),' לאימון רגיל ללא נעילת שלב.)'));
   resetAll(); updateUI(); draw(); raf=requestAnimationFrame(frame);
   return lab;
 }
@@ -1789,11 +1859,14 @@ function PursuitGame(){
    ===================================================================== */
 function SoccerGame(){
   const W=480,H=300,GOAL=104,gT=(H-GOAL)/2,gB=(H+GOAL)/2;
-  const PR=13,BR=8,ACCEL=0.55,PDAMP=0.86,BDAMP=0.985,E=0.72,KICK=2.4,MAXT=560,PLAYMAX=1600,HOLD=6,NA=8,NSTATE=128;
+  const PR=13,BR=8,ACCEL=0.55,PDAMP=0.86,BDAMP=0.99,E=0.72,KICK=2.9,MAXT=560,PLAYMAX=1600,HOLD=6,NA=8,NSTATE=128;
   const DIRS=[]; for(let k=0;k<8;k++)DIRS.push([Math.cos(k*Math.PI/4),Math.sin(k*Math.PI/4)]);
   const QH=qhelpers();
+  const PLAY_EPS=[0.92,0.32,0.13,0.05];  /* רעש בזמן צפייה לפי שלב: שלב 1 ריצה אקראית → שלב 4 חד וחלק (מעט רעש כדי לא להיתקע בלולאה דטרמיניסטית) */
+  const STAGE_TRAIN=[0,40,80,200];       /* כמה פרקי-אימון להשקיע בכל שלב (כדורגל לומד לאט יותר מתופסת) */
   let QA,QB,players,ball,episode,scoreA,scoreB,skA,skB,aHist,bHist,tick,progA,progB;
   let eps=0.03,alpha=0.5,gamma=0.92,sps=2,playing=false,raf=0,uiAcc=0,freeze=0,goalFx=null;
+  let forcedStage=null,trainedTo=-1,_live=false,tour=null,stuckT=0;
   let cv,ctx,nar,thoughts,aMet,bMet,aBar,bBar,curveA,curveB,tSecsS,tBarS,timerElS,levelElS,lvlTxtS;
   const teamQ=t=>t==='A'?QA:QB;
 
@@ -1801,12 +1874,13 @@ function SoccerGame(){
   function stateOf(p){ const goal=p.team==='A'?{x:W,y:H/2}:{x:0,y:H/2};
     const sB=sector(ball.x-p.x,ball.y-p.y), sG=sector(goal.x-ball.x,goal.y-ball.y);
     const near=Math.hypot(ball.x-p.x,ball.y-p.y)<(PR+BR+10)?1:0; return (sB*8+sG)*2+near; }
-  function curEps(){ return Math.max(eps, 0.6*Math.pow(0.90,episode)); }   /* דעיכת חקירה: ריצה אקראית בהתחלה → תוך ~50 פרקים תנועה חדה ומחושבת */
+  /* בזמן צפייה (live) ובשלב נעול — הרעש לפי השלב; אחרת לוח-זמנים דועך לאימון */
+  function curEps(){ if(_live&&forcedStage!=null) return PLAY_EPS[forcedStage]; return Math.max(eps, 0.6*Math.pow(0.90,episode)); }
   function pick(Q,s){ return Math.random()<curEps()?{a:randInt(NA),ex:true}:{a:QH.amax(Q,s,NA),ex:false}; }
   function learn(Q,s,a,r,ns,done){const i=s*NA+a;Q[i]+=alpha*(r+(done?0:gamma*QH.mQ(Q,ns,NA))-Q[i]);}
   function mkP(x,y,team){return {x,y,vx:0,vy:0,team,act:0,hold:0,sd:0,acc:0,ex:false,_pd:null,info:null,why:''};}
-  function kickoff(){ players=[mkP(W*0.30,H/2-46,'A'),mkP(W*0.30,H/2+46,'A'),mkP(W*0.70,H/2-46,'B'),mkP(W*0.70,H/2+46,'B')]; ball={x:W/2,y:H/2,vx:rnd(-1,1),vy:rnd(-1,1)}; }
-  function resetAll(){ QA=new Float64Array(NSTATE*NA); QB=new Float64Array(NSTATE*NA); episode=0;scoreA=0;scoreB=0;skA=0;skB=0;aHist=[];bHist=[];tick=0;progA=0;progB=0; kickoff(); }
+  function kickoff(){ players=[mkP(W*0.30,H/2-46,'A'),mkP(W*0.30,H/2+46,'A'),mkP(W*0.70,H/2-46,'B'),mkP(W*0.70,H/2+46,'B')]; ball={x:W/2,y:H/2,vx:rnd(-1,1),vy:rnd(-1,1)}; stuckT=0; }
+  function resetAll(){ QA=new Float64Array(NSTATE*NA); QB=new Float64Array(NSTATE*NA); episode=0;scoreA=0;scoreB=0;skA=0;skB=0;aHist=[];bHist=[];tick=0;progA=0;progB=0; forcedStage=null;trainedTo=-1; kickoff(); }
   function clampPlayer(p){ if(p.x<PR){p.x=PR;p.vx*=-0.3;} if(p.x>W-PR){p.x=W-PR;p.vx*=-0.3;} if(p.y<PR){p.y=PR;p.vy*=-0.3;} if(p.y>H-PR){p.y=H-PR;p.vy*=-0.3;} }
   function ballWalls(){ let s=null;
     if(ball.y<BR){ball.y=BR;ball.vy*=-E;} if(ball.y>H-BR){ball.y=H-BR;ball.vy*=-E;}
@@ -1817,17 +1891,25 @@ function SoccerGame(){
     if(d<min){ if(d<.01)d=.01; const nx=dx/d,ny=dy/d; ball.x=p.x+nx*min; ball.y=p.y+ny*min; const pv=p.vx*nx+p.vy*ny; const add=Math.max(0,pv)+KICK; ball.vx=ball.vx*0.25+nx*add; ball.vy=ball.vy*0.25+ny*add; p._kick=true; } }
   function playerPlayer(a,b){ const dx=b.x-a.x,dy=b.y-a.y; let d=Math.hypot(dx,dy); const min=PR*2; if(d<min&&d>0){ const nx=dx/d,ny=dy/d,ov=(min-d)/2; a.x-=nx*ov;a.y-=ny*ov;b.x+=nx*ov;b.y+=ny*ov; const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny; if(rv<0){ const im=rv*0.5; a.vx+=nx*im;a.vy+=ny*im;b.vx-=nx*im;b.vy-=ny*im; } } }
 
-  function tickStep(live){
+  function tickStep(live){ _live=live;
     for(const p of players){ if(p.hold<=0){ p.sd=stateOf(p); const pk=pick(teamQ(p.team),p.sd); p.act=pk.a;p.ex=pk.ex;p.acc=0;p.hold=HOLD; p.info={bx:ball.x-p.x,by:ball.y-p.y,a:pk.a}; p.why=''; } p._kick=false; }
     for(const p of players){ const d=DIRS[p.act]; p.vx+=d[0]*ACCEL; p.vy+=d[1]*ACCEL; }
-    const bx0=ball.x;
+    const bx0=ball.x,by0=ball.y;
     for(const p of players){ p.vx*=PDAMP;p.vy*=PDAMP; p.x+=p.vx;p.y+=p.vy; clampPlayer(p); }
     ball.vx*=BDAMP;ball.vy*=BDAMP; ball.x+=ball.vx; ball.y+=ball.vy;
     let scored=ballWalls();
     for(const p of players) playerBall(p);
     for(let i=0;i<players.length;i++)for(let j=i+1;j<players.length;j++)playerPlayer(players[i],players[j]);
+    /* שחרור כדור נעול: אם הוא איטי וצמוד לדופן/פינה יותר מדי זמן — דחיפה אל אזור פתוח במרכז כדי שהמשחק ימשיך לזרום */
+    { const bsp=Math.hypot(ball.vx,ball.vy), wY=ball.y<26||ball.y>H-26, wX=(ball.x<26||ball.x>W-26)&&(ball.y<gT||ball.y>gB);
+      if(bsp<0.55&&(wY||wX)) stuckT++; else stuckT=Math.max(0,stuckT-2);
+      if(stuckT>22){ const tx=W/2+rnd(-60,60),ty=H/2+rnd(-30,30),a=Math.atan2(ty-ball.y,tx-ball.x); ball.vx=Math.cos(a)*3.7; ball.vy=Math.sin(a)*3.7; stuckT=0; } }
     const bdx=ball.x-bx0;
-    for(const p of players){ const dist=Math.hypot(ball.x-p.x,ball.y-p.y); let r=(p.team==='A'?bdx:-bdx)*0.05; if(p._pd!=null)r+=(p._pd-dist)*0.02; p._pd=dist; if(scored)r+=scored===p.team?1:-0.5; p.acc+=r;
+    /* תגמול מכוון *מרכז שער היריב* (לא רק כיוון +x) — מונע דחיפת הכדור לפינות וגורם לבעיטות אל הגול */
+    const dgA0=Math.hypot(W-bx0,H/2-by0),dgA1=Math.hypot(W-ball.x,H/2-ball.y), dgB0=Math.hypot(bx0,H/2-by0),dgB1=Math.hypot(ball.x,H/2-ball.y);
+    for(const p of players){ const dist=Math.hypot(ball.x-p.x,ball.y-p.y); let r=(p.team==='A'?(dgA0-dgA1):(dgB0-dgB1))*0.10; if(p._pd!=null)r+=(p._pd-dist)*0.02; p._pd=dist;
+      let crowd=0; for(const q of players){ if(q!==p&&q.team===p.team&&Math.hypot(q.x-p.x,q.y-p.y)<PR*3)crowd++; } r-=crowd*0.006;   /* עידוד פיזור עדין: עונש קל על הצטופפות עם חבר לקבוצה */
+      if(scored)r+=scored===p.team?1.5:-0.25; p.acc+=r;   /* הטיה התקפית: פרס גבוה על גול, עונש קטן על ספיגה → שתי הקבוצות תוקפות והמשחק עתיר-שערים */
       if(scored)p.why=scored===p.team?'גול! (+1)':'ספגנו גול'; else if(p._kick)p.why=(p.team==='A'?bdx>0:bdx<0)?'בעט לכיוון השער':'נגע בכדור'; else if(p._pd!=null&&dist<p._pd+0.01&&!p.why)p.why=''; }
     if(bdx>0.06)progA++; else if(bdx<-0.06)progB++;
     tick++;
@@ -1840,37 +1922,59 @@ function SoccerGame(){
     aHist.push(clamp(skA*1.7,0,1)); bHist.push(clamp(skB*1.7,0,1)); if(aHist.length>160){aHist.shift();bHist.shift();}
     episode++; }
   function kickoffReset(){ progA=0;progB=0;tick=0; goalFx=null; kickoff(); }
-  function trainFast(n){ unlock('watcher'); freeze=0;goalFx=null; const t=episode+n; let g=0; while(episode<t&&g<n*MAXT*1.3){tickStep(false);g++;} updateUI(); }
-  function phaseIdx(){ const g=scoreA+scoreB,sc=(skA+skB)/2; if(g>=10)return 3; if(g>=2)return 2; if(sc>0.10)return 1; return 0; }
+  function runEpisodes(n){ const t=episode+n; let g=0; while(episode<t&&g<n*MAXT*1.3){tickStep(false);g++;} }
+  function trainFast(n){ unlock('watcher'); forcedStage=null;trainedTo=-1; freeze=0;goalFx=null; runEpisodes(n); updateUI(); }
+  /* מסע בין השלבים: מאמן בהדרגה עד השלב שנבחר, נועל את התצוגה לשלב ומריץ אותו חי */
+  function gotoStage(k){ unlock('watcher'); setPlaying(false); freeze=0;goalFx=null;
+    if(k<=trainedTo){ resetAll(); }
+    for(let s=trainedTo+1;s<=k;s++){ forcedStage=s; if(STAGE_TRAIN[s]>0) runEpisodes(STAGE_TRAIN[s]); }
+    trainedTo=k; forcedStage=k; kickoffReset(); updateUI(); draw(); setPlaying(true); }
+  function phaseIdx(){ if(forcedStage!=null)return forcedStage; const g=scoreA+scoreB,sc=(skA+skB)/2; if(g>=10)return 3; if(g>=2)return 2; if(sc>0.10)return 1; return 0; }
   const PH=[
-    {c:'#6366F1',l:'שלב 1 · חקירה',m:'הזיכרון ריק — השחקנים זזים אקראית והכדור בקושי זז. הם אוספים את הניסיון הראשון שלהם.'},
-    {c:'#F59E0B',l:'שלב 2 · רצים לכדור',m:'הם לומדים את הדבר הראשון שמשתלם: להגיע לכדור ולהשתלט עליו. הכדור מתחיל לזוז עם כוונה.'},
-    {c:'#22C55E',l:'שלב 3 · בועטים לשער',m:'הם מגלים שדחיפת הכדור לכיוון שער היריב נותנת פרס גדול — והגולים הראשונים נופלים!'},
-    {c:'#A855F7',l:'שלב 4 · משחק אמיתי',m:'שתי הקבוצות תוקפות, בולמות ובועטות. ההתקפה משוכללת — זה כבר משחק כדורגל ממשי.'},
+    {c:'#6366F1',l:'שלב 1 · אפס ידע',m:'תנועות אקראיות לגמרי. השחקנים מרצדים בלי לדעת איפה הכדור או השער — הכדור בקושי זז.'},
+    {c:'#F59E0B',l:'שלב 2 · רצים לכדור',m:'מתחילים לזהות את מיקומם מול הכדור ורצים אליו ומשתלטים עליו. הכדור כבר זז — אבל עדיין בלי כיוון ברור.'},
+    {c:'#22C55E',l:'שלב 3 · שולטים ובועטים',m:'שליטה בכדור: הובלה, נגיעות ובעיטות לכיוון שער היריב. הגולים הראשונים נופלים!'},
+    {c:'#A855F7',l:'שלב 4 · משחק אמיתי',m:'בלי זיגזג אקראי — תנועה חלקה, מסירות, הובלות, חסימות ובעיטות. שתי הקבוצות מבינות את המשחק לגמרי ומשחקות אמיתי.'},
   ];
   function thoughtFor(label,p){ if(!p||!p.info)return label+' חושבת…';
     const sees='רואה את הכדור '+posWords(p.info.by,p.info.bx); const act='רצה '+moveWords(DIRS[p.info.a][1],DIRS[p.info.a][0]);
     return '<b>'+label+'</b> '+sees+' ← '+act+(p.why?' <span style="color:#64748B">· '+p.why+'</span>':''); }
   function updateTimerS(){ if(!tSecsS)return; const remain=Math.max(0,PLAYMAX-tick); tSecsS.textContent=Math.ceil(remain/Math.max(1,sps*60))+' ש׳'; tBarS.style.width=(100*remain/PLAYMAX)+'%'; }
   function updateUI(){ updateTimerS(); aMet.textContent=scoreA; bMet.textContent=scoreB; aBar.style.width=Math.round(clamp(skA*1.7,0,1)*100)+'%'; bBar.style.width=Math.round(clamp(skB*1.7,0,1)*100)+'%'; curveA.draw(aHist); curveB.draw(bHist);
-    const lv = episode<15?['מתחיל · ריצה אקראית','#94A3B8'] : episode<60?['חובב · מתחיל להבין','#F59E0B'] : episode<160?['מתקדם · רץ לכדור','#3B82F6'] : ['מקצוען · תוקף לשער','#22C55E'];
-    lvlTxtS.textContent=lv[0]; levelElS.style.background='linear-gradient(145deg,'+lv[1]+',#0007)';
-    const i=phaseIdx(); nar.set(i,PH[i].c,PH[i].l,PH[i].m);
+    const i=phaseIdx();
+    const LV=[['מתחיל · ריצה אקראית','#94A3B8'],['חובב · רץ לכדור','#F59E0B'],['מתקדם · בועט לשער','#3B82F6'],['מקצוען · משחק אמיתי','#22C55E']];  /* רמת הבוטים נגזרת מהשלב (i) כדי להישאר מסונכרנת עם ההסבר */
+    lvlTxtS.textContent=LV[i][0]; levelElS.style.background='linear-gradient(145deg,'+LV[i][1]+',#0007)';
+    nar.set(i,PH[i].c,PH[i].l,PH[i].m); if(tour)tour.update(i);
     const a0=players.find(p=>p.team==='A'),b0=players.find(p=>p.team==='B');
     thoughts.set(0,thoughtFor('הקבוצה האדומה',a0),a0&&a0.ex); thoughts.set(1,thoughtFor('הקבוצה הכחולה',b0),b0&&b0.ex); }
-  function drawGoal(side){ ctx.fillStyle='rgba(255,255,255,.85)'; ctx.fillRect(side===0?0:W-7,gT,7,gB-gT); ctx.fillStyle=side===0?'#3B82F6':'#EF4444'; ctx.fillRect(side===0?0:W-4,gT,4,gB-gT); }
+  /* כל שער צבוע בצבע הקבוצה ש*מגינה* עליו: שמאל = אדומים, ימין = כחולים */
+  function drawTri(x,y,dir,col){ ctx.fillStyle=col; ctx.beginPath(); ctx.moveTo(x,y-4); ctx.lineTo(x+dir*7,y); ctx.lineTo(x,y+4); ctx.closePath(); ctx.fill(); }
+  function drawGoal(side,col,name){ const L=side===0;
+    ctx.save();
+    ctx.globalAlpha=0.18; ctx.fillStyle=col; ctx.fillRect(L?4:W-30,gT,26,gB-gT); ctx.globalAlpha=1;        /* אזור השער מוצלל בצבע המגינים */
+    ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fillRect(L?0:W-7,gT,7,gB-gT);
+    ctx.fillStyle=col; ctx.fillRect(L?0:W-4,gT,4,gB-gT);
+    ctx.strokeStyle=col; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(L?0:W,gT); ctx.lineTo(L?15:W-15,gT); ctx.moveTo(L?0:W,gB); ctx.lineTo(L?15:W-15,gB); ctx.stroke();
+    ctx.translate(L?18:W-18,H/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font='800 12px Rubik'; ctx.fillStyle=col; ctx.fillText('שער ה'+name,0,0);
+    ctx.restore();
+  }
   function draw(){ if(!cv.isConnected)return; ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,W,H);
     ctx.fillStyle='#2E8B57'; rr(ctx,0,0,W,H,14); ctx.fill();
     ctx.fillStyle='rgba(255,255,255,.06)'; for(let i=0;i<8;i++)if(i%2===0)ctx.fillRect(i*W/8,0,W/8,H);
     ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=2; ctx.strokeRect(4,4,W-8,H-8); ctx.beginPath();ctx.moveTo(W/2,4);ctx.lineTo(W/2,H-4);ctx.stroke(); ctx.beginPath();ctx.arc(W/2,H/2,36,0,6.28);ctx.stroke();
-    drawGoal(0); drawGoal(W);
+    drawGoal(0,'#EF4444','אדומים'); drawGoal(W,'#3B82F6','כחולים');
+    /* כותרת כיוון-תקיפה למעלה: האדומים תוקפים ימינה, הכחולים שמאלה */
+    ctx.save(); ctx.textBaseline='middle'; ctx.font='700 11px Rubik';
+    ctx.fillStyle='#EF4444'; ctx.textAlign='right'; ctx.fillText('אדומים תוקפים',W/2-26,12); drawTri(W/2-20,12,1,'#EF4444');
+    ctx.fillStyle='#3B82F6'; ctx.textAlign='left'; ctx.fillText('כחולים תוקפים',W/2+26,12); drawTri(W/2+20,12,-1,'#3B82F6');
+    ctx.restore();
     for(const p of players){ ctx.beginPath();ctx.arc(p.x,p.y,PR,0,6.28); ctx.fillStyle=p.team==='A'?'#EF4444':'#3B82F6'; ctx.fill(); ctx.lineWidth=3;ctx.strokeStyle='#fff';ctx.stroke(); }
     ctx.beginPath();ctx.arc(ball.x,ball.y,BR,0,6.28);ctx.fillStyle='#fff';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#111';ctx.stroke(); ctx.fillStyle='#111';ctx.beginPath();ctx.arc(ball.x,ball.y,BR*0.45,0,6.28);ctx.fill();
     if(goalFx){ const p=clamp(goalFx.t/55,0,1); ctx.save(); ctx.globalAlpha=(1-p)*0.65; ctx.fillStyle=goalFx.side==='A'?'#EF4444':'#3B82F6'; ctx.fillRect(goalFx.side==='A'?W-12:0,gT,12,gB-gT); ctx.globalAlpha=clamp(1-p*0.7,0,1); ctx.lineWidth=3; ctx.strokeStyle=goalFx.side==='A'?'#EF4444':'#3B82F6'; ctx.fillStyle='#fff'; ctx.font='800 32px "Fredoka","Rubik",sans-serif'; ctx.textAlign='center'; ctx.strokeText('גול!',W/2,H/2-8); ctx.fillText('גול!',W/2,H/2-8); ctx.restore(); } }
   function frame(t){ if(!cv.isConnected){playing=false;return;} if(freeze>0){ if(goalFx)goalFx.t++; freeze--; if(freeze===0){kickoffReset();updateUI();} } else if(playing){ const n=Math.max(1,Math.round(sps)); for(let i=0;i<n&&freeze===0;i++)tickStep(true); if((++uiAcc)>=6){uiAcc=0;updateUI();} } draw(); raf=requestAnimationFrame(frame); }
 
   const lab=labShell(ICON.reward,['#22C55E','#15803D'],'כדורגל AI · פיזיקה בסגנון HaxBall','AI Soccer · momentum, kicks & bounces',
-    'מנוע פיזיקה רציף: לשחקנים ולכדור יש מהירות, תאוצה, חיכוך והתנגשויות — כמו ב-HaxBall. שתי הקבוצות לומדות לבד להגיע לכדור ולבעוט אותו לשער. עקבו אחרי קו ההתקדמות של כל קבוצה ואחרי "המחשבות" שלהן בזמן אמת.');
+    'מנוע פיזיקה רציף: לשחקנים ולכדור יש מהירות, תאוצה, חיכוך והתנגשויות — כמו ב-HaxBall. כל קבוצה מגינה על השער שבצבע שלה ותוקפת את שער היריב: האדומים מגינים על השער השמאלי ותוקפים ימינה, הכחולים להפך. עקבו אחרי קו ההתקדמות של כל קבוצה ואחרי "המחשבות" שלהן בזמן אמת.');
   cv=el('canvas',{class:'sim',width:W*DPR,height:H*DPR,style:{width:W+'px',maxWidth:'100%'}}); ctx=cv.getContext('2d');
   tSecsS=el('span',{class:'secs'},''); tBarS=el('i',{style:{width:'100%'}});
   timerElS=el('div',{class:'round-timer chase'}, svg(ICON.clock,{stroke:'#DC2626'}), el('b',{},'זמן המשחק'), tSecsS, el('span',{class:'bar'},tBarS));
@@ -1887,12 +1991,19 @@ function SoccerGame(){
   lab.appendChild(el('div',{class:'lab-stage two'},
     el('div',{class:'canvas-box'}, levelElS, timerElS, cv, el('div',{class:'legend'}, leg('#EF4444','אדומים'), leg('#3B82F6','כחולים'), leg('#fff','כדור'))),
     el('div',{}, nar.root, thoughts.root, teams)));
+  tour=StageTour([
+    {n:'שלב 1 · אפס ידע',d:'ריצה אקראית לגמרי',c:'#6366F1'},
+    {n:'שלב 2 · רצים לכדור',d:'מזהים את מיקום הכדור',c:'#F59E0B'},
+    {n:'שלב 3 · שולטים ובועטים',d:'הובלה ובעיטות לשער',c:'#22C55E'},
+    {n:'שלב 4 · משחק אמיתי',d:'מסירות, חסימות, גולים',c:'#A855F7'},
+  ], gotoStage);
+  lab.appendChild(tour.root);
   lab.appendChild(el('div',{class:'sliders'}, spS.wrap));
   lab.appendChild(el('div',{class:'controls'}, playBtn,
     tbtn(ICON.step,'צעד',null,()=>{ if(freeze>0){freeze=0;kickoffReset();} else {for(let i=0;i<HOLD;i++)tickStep(true);} updateUI(); }),
-    tbtn(ICON.bolt,'⚡ אמן 300 פרקים','amber',()=>{setPlaying(false);trainFast(300);}),
+    tbtn(ICON.bolt,'⚡ אמן חופשי','amber',()=>{setPlaying(false);trainFast(300);}),
     tbtn(ICON.reset,'איפוס','pink',()=>{setPlaying(false);resetAll();updateUI();})));
-  lab.appendChild(tryBox(el('b',{},'להדגמה מהירה: '),'הפעילו (Play) וראו ריצה ',el('b',{},'אקראית ומגושמת'),'. לחצו פעם אחת על ',el('b',{},'⚡ אמן'),' — והקבוצות יתחילו לרוץ אל הכדור בצורה חדה ולבעוט לשער. ההבדל בין ההתחלה ה"טיפשה" לסוף ה"מקצועני" קופץ לעין.'));
+  lab.appendChild(tryBox(el('b',{},'מסע בין השלבים: '),'לחצו על ',el('b',{},'שלב 1→2→3→4'),' בזה אחר זה — בכל לחיצה הקבוצות מתאמנות לאותו שלב ואז משחקות אותו חי. שלב 1: ריצה ',el('b',{},'אקראית לגמרי'),'; שלב 2: רצים אל הכדור; שלב 3: הובלה ובעיטות לשער; שלב 4: ',el('b',{},'משחק אמיתי'),' עם מסירות, חסימות וגולים. (',el('b',{},'⚡ אמן חופשי'),' לאימון רגיל ללא נעילת שלב.)'));
   resetAll(); updateUI(); draw(); raf=requestAnimationFrame(frame);
   return lab;
 }
