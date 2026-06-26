@@ -75,6 +75,16 @@ button{font-family:inherit}
     radial-gradient(900px 600px at 0% 100%, #FAE8FF 0%, rgba(250,232,255,0) 55%),
     linear-gradient(180deg,#EEF2FF 0%, #F5F3FF 55%, #FFF1F9 100%);
 }
+/* אלמנטים בנושא הלמידה (לולאת RL, מוח, פרס, רקטה…) שצפים בצדי הרקע בלולאה מושלמת */
+.bg-floaters{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.bg-floaters .floater{position:absolute}
+.bg-floaters .floater>span,.bg-floaters .floater svg{display:block;width:100%;height:100%}
+.fl-float{animation:flBob var(--d,12s) ease-in-out var(--dl,0s) infinite;opacity:var(--op,.2)}
+.fl-spin{animation:flSpin var(--d,28s) linear var(--dl,0s) infinite;opacity:var(--op,.15)}
+@keyframes flBob{0%,100%{transform:translateY(0) rotate(var(--r0,0deg))}50%{transform:translateY(var(--ty,-24px)) rotate(var(--r1,8deg))}}
+@keyframes flSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@media(max-width:760px){.bg-floaters{display:none}}   /* במסכים צרים אין שוליים — מסתירים כדי לא להפריע לתוכן */
+@media(prefers-reduced-motion:reduce){.fl-float,.fl-spin{animation:none}}
 
 /* ---------- ניווט ---------- */
 .nav-wrap{position:sticky;top:0;z-index:50;padding:14px clamp(12px,3vw,26px)}
@@ -731,28 +741,61 @@ function confetti(x=innerWidth/2, y=innerHeight/3){
   }
 }
 
-/* ------------------------- רקע אנימטיבי (בועות גרדיאנט) ------------------------- */
+/* ------------------------- אלמנטים בנושא RL שצפים בצדי הרקע ------------------------- */
+function buildFloaters(){
+  if(document.querySelector('.bg-floaters')) return;
+  const L=el('div',{class:'bg-floaters','aria-hidden':'true'});
+  /* [icon, color, side, edge%, top%, size, dur, delay, kind] — לולאת RL/מוח/פרס/רקטה… בצדי המסך, כל אחד בלולאה מושלמת */
+  const D=[
+    [ICON.loop,  '#6366F1','left',  3,  9, 60, 30, 0, 'spin'],
+    [ICON.brain, '#A855F7','left',  4, 28, 48, 13, 2, 'float'],
+    [ICON.reward,'#F59E0B','left',  2, 49, 40, 11, 5, 'float'],
+    [ICON.rocket,'#EC4899','left',  5, 69, 46, 15, 1, 'float'],
+    [ICON.bolt,  '#06B6D4','left',  3, 88, 38, 10, 3, 'float'],
+    [ICON.target,'#22C55E','right', 4, 13, 52, 16, 2, 'float'],
+    [ICON.policy,'#6366F1','right', 2, 33, 44, 12, 4, 'float'],
+    [ICON.loop,  '#EC4899','right', 4, 55, 56, 34, 0, 'spin'],
+    [ICON.robot, '#06B6D4','right', 5, 74, 48, 14, 1, 'float'],
+    [ICON.spark, '#F59E0B','right', 3, 91, 36,  9, 3, 'float'],
+  ];
+  for(const [ic,col,side,edge,top,size,dur,dl,kind] of D){
+    const op=kind==='spin'?'.18':'.28';
+    const css=`${side}:${edge}%;top:${top}%;width:${size}px;height:${size}px;--d:${dur}s;--dl:-${dl}s;`+
+      `--r0:${side==='left'?-7:7}deg;--r1:${side==='left'?9:-9}deg;--ty:${side==='left'?-26:-22}px;--op:${op}`;
+    L.appendChild(el('div',{class:'floater '+(kind==='spin'?'fl-spin':'fl-float'),style:css}, svg(ic,{stroke:col,sw:kind==='spin'?1.7:1.9})));
+  }
+  document.body.appendChild(L);
+}
+
+/* ------------------------- רקע אנימטיבי (בועות גרדיאנט בלולאה מושלמת) ------------------------- */
 function startBackground(){
+  buildFloaters();
   const cv=$('#bgCanvas'),ctx=cv.getContext('2d');
-  let W,H,blobs=[];
+  let W,H,dpr;
   const palette=[[129,140,248],[168,85,247],[236,72,153],[34,197,94],[6,182,212],[252,211,77]];
-  function resize(){ const dpr=Math.min(devicePixelRatio||1,2);
-    W=cv.width=innerWidth*dpr; H=cv.height=innerHeight*dpr;
+  function resize(){ dpr=Math.min(devicePixelRatio||1,2); W=cv.width=innerWidth*dpr; H=cv.height=innerHeight*dpr;
     cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; }
   resize(); addEventListener('resize',resize);
-  for(let i=0;i<6;i++){ const c=palette[i%palette.length];
-    blobs.push({x:rnd(0,1),y:rnd(0,1),r:rnd(.18,.34),dx:rnd(-.00006,.00006),dy:rnd(-.00006,.00006),c,ph:rnd(0,6.28)}); }
-  function draw(t){
+  /* ספרייטים רכים מוכנים מראש — חוסכים יצירת גרדיאנט בכל פריים (ביצועים + חלקות) */
+  const sprites=palette.map(c=>{ const S=320,oc=document.createElement('canvas'); oc.width=oc.height=S; const o=oc.getContext('2d');
+    const g=o.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);
+    g.addColorStop(0,'rgba('+c[0]+','+c[1]+','+c[2]+',0.34)'); g.addColorStop(.45,'rgba('+c[0]+','+c[1]+','+c[2]+',0.12)'); g.addColorStop(1,'rgba('+c[0]+','+c[1]+','+c[2]+',0)');
+    o.fillStyle=g; o.fillRect(0,0,S,S); return oc; });
+  /* כל בועה נעה במסלול אליפטי סגור עם תדרים *שלמים* (kx,ky,kr) של תדר-הבסיס → כל הסצנה חוזרת בדיוק כל PERIOD שניות = לולאה מושלמת.
+     התנועה איטית ועדינה (אמפליטודה ~6-8% מהמסך + "נשימה" של ±7% ברדיוס) — מורגשת אך לא מעייפת. */
+  const A=[[.15,.18],[.83,.13],[.72,.80],[.24,.83],[.50,.40],[.93,.55]];
+  const R=[.34,.30,.32,.30,.27,.24], AX=[.13,.11,.115,.10,.14,.09], AY=[.11,.13,.10,.115,.10,.12];
+  const KX=[1,2,1,2,1,2], KY=[2,1,2,1,2,1], KR=[1,1,2,2,1,2];
+  const PERIOD=34, w0=2*Math.PI/PERIOD;
+  const blobs=A.map((a,i)=>({bx:a[0],by:a[1],r:R[i],ax:AX[i],ay:AY[i],kx:KX[i],ky:KY[i],kr:KR[i],pa:i*1.13,pb:i*0.77,pr:i*0.91,sp:sprites[i]}));
+  function draw(now){
+    const t=now*0.001, m=Math.min(W,H);
     ctx.clearRect(0,0,W,H); ctx.globalCompositeOperation='lighter';
     for(const b of blobs){
-      if(!prefersReduced){ b.x+=b.dx; b.y+=b.dy;
-        if(b.x<-.2||b.x>1.2)b.dx*=-1; if(b.y<-.2||b.y>1.2)b.dy*=-1; }
-      const cx=b.x*W + Math.sin(t*0.0002+b.ph)*40, cy=b.y*H + Math.cos(t*0.00017+b.ph)*40;
-      const rad=b.r*Math.min(W,H);
-      const g=ctx.createRadialGradient(cx,cy,0,cx,cy,rad);
-      g.addColorStop(0,'rgba('+b.c[0]+','+b.c[1]+','+b.c[2]+',0.28)');
-      g.addColorStop(1,'rgba('+b.c[0]+','+b.c[1]+','+b.c[2]+',0)');
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,rad,0,6.2832); ctx.fill();
+      const cx=(b.bx+b.ax*Math.sin(b.kx*w0*t+b.pa))*W;
+      const cy=(b.by+b.ay*Math.cos(b.ky*w0*t+b.pb))*H;
+      const rad=b.r*m*(1+0.10*Math.sin(b.kr*w0*t+b.pr));
+      ctx.drawImage(b.sp, cx-rad, cy-rad, rad*2, rad*2);
     }
     ctx.globalCompositeOperation='source-over';
     if(!prefersReduced) requestAnimationFrame(draw);
